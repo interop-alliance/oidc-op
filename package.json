@@ -1,8 +1,8 @@
 {
-  "name": "@solid/oidc-op",
+  "name": "@interop-alliance/oidc-op",
   "version": "0.6.0",
   "engines": {
-    "node": ">=10.0"
+    "node": ">=12.0"
   },
   "description": "OpenID Connect Provider",
   "main": "src/index.js",
@@ -15,11 +15,11 @@
     "postversion": "git push --follow-tags",
     "preversion": "mocha test",
     "standard": "standard",
-    "test": "nyc mocha test && echo 'to view coverage: open coverage/index.html'"
+    "test": "nyc mocha test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/solid/oidc-op.git"
+    "url": "https://github.com/interop-alliance/oidc-op.git"
   },
   "contributors": [
     {
@@ -39,9 +39,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/solid/oidc-op/issues"
+    "url": "https://github.com/interop-alliance/oidc-op/issues"
   },
-  "homepage": "https://github.com/solid/oidc-op#README",
+  "homepage": "https://github.com/interop-alliance/oidc-op#README",
   "dependencies": {
     "@solid/jose": "^0.5.0",
     "@solid/keychain": "^0.2.0",
