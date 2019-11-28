@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict'
 
 /**
@@ -16,7 +17,6 @@ const { URL } = require('whatwg-url')
  * AuthenticationRequest
  */
 class AuthenticationRequest extends BaseRequest {
-
   /**
    * Request Handler
    *
@@ -25,8 +25,8 @@ class AuthenticationRequest extends BaseRequest {
    * @param {Provider} provider
    */
   static handle (req, res, provider) {
-    let {host} = provider
-    let request = new AuthenticationRequest(req, res, provider)
+    const { host } = provider
+    const request = new AuthenticationRequest(req, res, provider)
 
     return Promise
       .resolve(request)
@@ -64,7 +64,7 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {Promise<AuthenticationRequest>}
    */
   loadClient (request) {
-    let { provider, params } = request
+    const { provider, params } = request
 
     if (!params.client_id) {
       // An error for the missing client_id will be thrown in validate()
@@ -73,7 +73,7 @@ class AuthenticationRequest extends BaseRequest {
 
     return provider.backend.get('clients', params.client_id)
 
-      .then(client => {  // client registration
+      .then(client => { // client registration
         request.client = client
 
         if (client && client.jwks) {
@@ -101,16 +101,16 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {Promise<AuthenticationRequest>}
    */
   decodeRequestParam (request) {
-    let { params } = request
+    const { params } = request
 
-    if (!params['request']) {
-      return Promise.resolve(request)  // Pass through, no request param present
+    if (!params.request) {
+      return Promise.resolve(request) // Pass through, no request param present
     }
 
     let requestJwt
 
     return Promise.resolve()
-      .then(() => JWT.decode(params['request']))
+      .then(() => JWT.decode(params.request))
 
       .catch(err => {
         request.redirect({
@@ -161,7 +161,7 @@ class AuthenticationRequest extends BaseRequest {
     // Importing the key serves as additional validation
     return JWK.importKey(jwk)
       .then(importedJwk => {
-        this.cnfKey = importedJwk  // has a cryptoKey property
+        this.cnfKey = importedJwk // has a cryptoKey property
 
         return importedJwk
       })
@@ -178,8 +178,8 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {Promise<JWT>} Resolves with the decoded request jwt
    */
   validateRequestParam (requestJwt) {
-    let { params } = this
-    let { payload } = requestJwt
+    const { params } = this
+    const { payload } = requestJwt
 
     return Promise.resolve()
 
@@ -215,7 +215,7 @@ class AuthenticationRequest extends BaseRequest {
         if (payload.response_type && payload.response_type !== params.response_type) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Mismatching response type in request object',
+            error_description: 'Mismatching response type in request object'
           })
         }
 
@@ -226,7 +226,7 @@ class AuthenticationRequest extends BaseRequest {
         if (payload.scope && payload.scope !== params.scope) {
           return this.redirect({
             error: 'invalid_scope',
-            error_description: 'Mismatching scope in request object',
+            error_description: 'Mismatching scope in request object'
           })
         }
 
@@ -281,11 +281,11 @@ class AuthenticationRequest extends BaseRequest {
       return Promise.resolve()
     }
 
-    let clientJwks = this.client.jwks
-    let registeredSigningAlg = this.client['request_object_signing_alg']
+    const clientJwks = this.client.jwks
+    const registeredSigningAlg = this.client.request_object_signing_alg
 
-    let signedRequest = requestJwt.header.alg !== 'none'
-    let signatureRequired = clientJwks ||
+    const signedRequest = requestJwt.header.alg !== 'none'
+    const signatureRequired = clientJwks ||
       (registeredSigningAlg && registeredSigningAlg !== 'none')
 
     if (!signedRequest && !signatureRequired) {
@@ -299,38 +299,38 @@ class AuthenticationRequest extends BaseRequest {
           // No keys pre-registered, but the request is signed. Throw error
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Signed request object, but no jwks pre-registered',
+            error_description: 'Signed request object, but no jwks pre-registered'
           })
         }
 
         if (signedRequest && registeredSigningAlg === 'none') {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Signed request object, but no signature allowed by request_object_signing_alg',
+            error_description: 'Signed request object, but no signature allowed by request_object_signing_alg'
           })
         }
 
         if (!signedRequest && signatureRequired) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Signature required for request object',
+            error_description: 'Signature required for request object'
           })
         }
 
         if (registeredSigningAlg && requestJwt.header.alg !== registeredSigningAlg) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Request signed by algorithm that does not match registered request_object_signing_alg value',
+            error_description: 'Request signed by algorithm that does not match registered request_object_signing_alg value'
           })
         }
 
         // Request is signed. Validate signature against registered jwks
-        let keyMatch = requestJwt.resolveKeys(clientJwks)
+        const keyMatch = requestJwt.resolveKeys(clientJwks)
 
         if (!keyMatch) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Cannot resolve signing key for request object',
+            error_description: 'Cannot resolve signing key for request object'
           })
         }
 
@@ -339,7 +339,7 @@ class AuthenticationRequest extends BaseRequest {
             if (!verified) {
               return this.redirect({
                 error: 'invalid_request',
-                error_description: 'Invalid request object signature',
+                error_description: 'Invalid request object signature'
               })
             }
           })
@@ -368,7 +368,7 @@ class AuthenticationRequest extends BaseRequest {
     if (!params.redirect_uri) {
       return request.badRequest({
         error: 'invalid_request',
-        error_description: 'Missing redirect uri',
+        error_description: 'Missing redirect uri'
       })
     }
 
@@ -392,7 +392,7 @@ class AuthenticationRequest extends BaseRequest {
     if (!params.response_type) {
       return request.redirect({
         error: 'invalid_request',
-        error_description: 'Missing response type',
+        error_description: 'Missing response type'
       })
     }
 
@@ -400,7 +400,7 @@ class AuthenticationRequest extends BaseRequest {
     if (!params.scope) {
       return request.redirect({
         error: 'invalid_scope',
-        error_description: 'Missing scope',
+        error_description: 'Missing scope'
       })
     }
 
@@ -444,7 +444,7 @@ class AuthenticationRequest extends BaseRequest {
 
   static validateRedirectUri (registeredUris, redirectUri) {
     // Drop hash fragment when validating against pre-registered uris
-    let uriNoHash = (uri) => {
+    const uriNoHash = (uri) => {
       uri = new URL(uri)
       uri.hash = ''
       return uri.toString()
@@ -459,9 +459,9 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {bool}
    */
   supportedResponseType () {
-    let {params, provider} = this
-    let supportedResponseTypes = provider.response_types_supported
-    let requestedResponseType = params.response_type
+    const { params, provider } = this
+    const supportedResponseTypes = provider.response_types_supported
+    const requestedResponseType = params.response_type
 
     // TODO
     // verify that the requested response types are permitted
@@ -477,9 +477,9 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {bool}
    */
   supportedResponseMode () {
-    let {params, provider} = this
-    let supportedResponseModes = provider.response_modes_supported
-    let requestedResponseMode = params.response_mode
+    const { params, provider } = this
+    const supportedResponseModes = provider.response_modes_supported
+    const requestedResponseMode = params.response_mode
 
     if (!requestedResponseMode) {
       return true
@@ -494,9 +494,9 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {bool}
    */
   requiredNonceProvided () {
-    let {params} = this
-    let {nonce, response_type: responseType} = params
-    let requiring = ['id_token', 'token']
+    const { params } = this
+    const { nonce, response_type: responseType } = params
+    const requiring = ['id_token', 'token']
 
     if (!nonce && requiring.some(type => responseType.indexOf(type) !== -1)) {
       return false
@@ -531,7 +531,7 @@ class AuthenticationRequest extends BaseRequest {
       .then(response => request.includeAccessToken(response))
       .then(response => request.includeAuthorizationCode(response))
       .then(response => request.includeIDToken(response))
-      //.then(this.includeSessionState.bind(this))
+      // .then(this.includeSessionState.bind(this))
       .then(response => request.redirect(response))
       // do some error handling here
   }
@@ -553,7 +553,7 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {Promise}
    */
   includeAccessToken (response) {
-    let {responseTypes} = this
+    const { responseTypes } = this
 
     if (responseTypes.includes('token')) {
       return AccessToken.issueForRequest(this, response)
@@ -568,27 +568,27 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {Promise}
    */
   includeAuthorizationCode (response) {
-    let {responseTypes, params, scope} = this
-    let {provider, client, subject} = this
-    let {backend} = provider
+    const { responseTypes, params, scope } = this
+    const { provider, client, subject } = this
+    const { backend } = provider
 
     if (responseTypes.includes('code')) {
-      let code = random(16)
-      let sub = subject['_id']
-      let aud = client['client_id']
-      let iat = Math.floor(Date.now() / 1000)
-      let exp = iat + 600
-      let max = params['max_age'] || client['default_max_age']
-      let nonce = params['nonce']
-      let redirect_uri = params['redirect_uri']
+      const code = random(16)
+      const sub = subject._id
+      const aud = client.client_id
+      const iat = Math.floor(Date.now() / 1000)
+      const exp = iat + 600
+      const max = params.max_age || client.default_max_age
+      const nonce = params.nonce
+      const redirect_uri = params.redirect_uri
 
-      let ac = new AuthorizationCode({
+      const ac = new AuthorizationCode({
         code, sub, aud, exp, max, scope, nonce, redirect_uri
       })
 
       return backend.put('codes', code, ac)
         .then(() => {
-          response['code'] = code
+          response.code = code
           return response
         })
     }
@@ -602,7 +602,7 @@ class AuthenticationRequest extends BaseRequest {
    * @returns {Promise}
    */
   includeIDToken (response) {
-    let {responseTypes} = this
+    const { responseTypes } = this
 
     if (responseTypes.includes('id_token')) {
       return IDToken.issueForRequest(this, response)

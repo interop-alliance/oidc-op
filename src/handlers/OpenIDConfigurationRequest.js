@@ -10,7 +10,6 @@ const BaseRequest = require('./BaseRequest')
  * OpenIDConfigurationRequest
  */
 class OpenIDConfigurationRequest extends BaseRequest {
-
   /**
    * Request Handler
    *
@@ -28,5 +27,3 @@ class OpenIDConfigurationRequest extends BaseRequest {
  * Export
  */
 module.exports = OpenIDConfigurationRequest
-
-

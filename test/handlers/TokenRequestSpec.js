@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict'
 
 /**
@@ -15,7 +16,7 @@ const HttpMocks = require('node-mocks-http')
 chai.use(require('dirty-chai'))
 chai.use(require('sinon-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -28,7 +29,6 @@ const IDToken = require(path.join(cwd, 'src', 'IDToken'))
  * Tests
  */
 describe('TokenRequest', () => {
-
   /**
    * Handle
    */
@@ -42,9 +42,9 @@ describe('TokenRequest', () => {
 
     before(() => {
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {}
-      let provider = { host: {} }
+      const req = { method: 'POST', body: params }
+      const res = {}
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
     })
 
@@ -83,16 +83,16 @@ describe('TokenRequest', () => {
     })
 
     it('should return true with a supported response type parameter', () => {
-      let params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let request = new TokenRequest(req, res, provider)
+      const params = { grant_type: 'authorization_code' }
+      const req = { method: 'POST', body: params }
+      const request = new TokenRequest(req, res, provider)
       request.supportedGrantType().should.equal(true)
     })
 
     it('should return false with an unsupported response type parameter', () => {
-      let params = { grant_type: 'other' }
-      let req = { method: 'POST', body: params }
-      let request = new TokenRequest(req, res, provider)
+      const params = { grant_type: 'other' }
+      const req = { method: 'POST', body: params }
+      const request = new TokenRequest(req, res, provider)
       request.supportedGrantType().should.equal(false)
     })
   })
@@ -103,16 +103,16 @@ describe('TokenRequest', () => {
   describe('validate', () => {
     describe('with valid params', () => {
       it('should resolve with the request', () => {
-        let params = {
+        const params = {
           grant_type: 'authorization_code',
           code: 'c0de',
           redirect_uri: 'https://example.com/callback'
         }
-        let req = { method: 'POST', body: params }
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['authorization_code'] }
-        let request = new TokenRequest(req, res, provider)
+        const req = { method: 'POST', body: params }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['authorization_code'] }
+        const request = new TokenRequest(req, res, provider)
 
         return request.validate(request)
           .then(result => {
@@ -262,20 +262,20 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_secret: 's3cr3t'
         }
-        let req = {
+        const req = {
           method: 'POST',
           body: params,
           headers: {
             authorization: 'Basic base64str'
           }
         }
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -299,12 +299,12 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion_type: 'type'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params,
           headers: {
@@ -312,9 +312,9 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -338,20 +338,20 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_secret: 's3cr3t',
           client_assertion_type: 'type'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -375,19 +375,19 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion_type: 'type'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -403,7 +403,6 @@ describe('TokenRequest', () => {
           error_description: 'Invalid client assertion type'
         })
       })
-
     })
 
     describe('with missing client assertion', () => {
@@ -412,19 +411,19 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -448,18 +447,18 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -483,11 +482,11 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'clientSecretBasic')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params,
           headers: {
@@ -495,9 +494,9 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -518,20 +517,20 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'clientSecretPost')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_id: 'uuid',
           client_secret: 's3cr3t'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -552,20 +551,20 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'clientSecretJWT')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion: 'jwt',
           client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
         request.authenticateClient(request)
@@ -591,7 +590,7 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
@@ -599,8 +598,8 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.clientSecretBasic(request)
@@ -624,16 +623,16 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Bearer ${new Buffer('id:secret').toString('base64')}`
+            authorization: `Bearer ${Buffer.from('id:secret').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.clientSecretBasic(request)
@@ -657,16 +656,16 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer(':').toString('base64')}`
+            authorization: `Basic ${Buffer.from(':').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.clientSecretBasic(request)
@@ -690,16 +689,16 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer('id:secret').toString('base64')}`
+            authorization: `Basic ${Buffer.from('id:secret').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve(null) }
         }
@@ -726,16 +725,16 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer('id:WRONG').toString('base64')}`
+            authorization: `Basic ${Buffer.from('id:WRONG').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
         }
@@ -762,16 +761,16 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer('id:secret').toString('base64')}`
+            authorization: `Basic ${Buffer.from('id:secret').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
         }
@@ -804,15 +803,15 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_secret: 'secret'
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.clientSecretPost(request)
@@ -836,15 +835,15 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_id: 'secret'
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.clientSecretPost(request)
@@ -868,7 +867,7 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_id: 'uuid',
@@ -876,8 +875,8 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve(null) }
         }
@@ -904,7 +903,7 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_id: 'uuid',
@@ -912,8 +911,8 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
         }
@@ -941,8 +940,8 @@ describe('TokenRequest', () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let client_id = 'uuid'
-        let req = {
+        const client_id = 'uuid'
+        const req = {
           method: 'POST',
           body: {
             client_id: client_id,
@@ -952,12 +951,12 @@ describe('TokenRequest', () => {
 
         client = { client_id, client_secret: 'secret' }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: {
             get: (collection, id) => {
-              return Promise.resolve(collection == 'clients' && id == client_id ? client : undefined)
+              return Promise.resolve(collection === 'clients' && id === client_id ? client : undefined)
             }
           }
         }
@@ -1011,9 +1010,9 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'authorizationCodeGrant')
 
-        let req = { method: 'POST', body: { grant_type: 'authorization_code' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'authorization_code' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.grant(request)
@@ -1034,9 +1033,9 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'refreshTokenGrant')
 
-        let req = { method: 'POST', body: { grant_type: 'refresh_token' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'refresh_token' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.grant(request)
@@ -1057,9 +1056,9 @@ describe('TokenRequest', () => {
       before(() => {
         sinon.stub(TokenRequest.prototype, 'clientCredentialsGrant')
 
-        let req = { method: 'POST', body: { grant_type: 'client_credentials' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'client_credentials' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
         request.grant(request)
@@ -1078,9 +1077,9 @@ describe('TokenRequest', () => {
       let request
 
       before(() => {
-        let req = { method: 'POST', body: { grant_type: 'noyoudint' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'noyoudint' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
       })
@@ -1102,11 +1101,11 @@ describe('TokenRequest', () => {
     beforeEach(() => {
       tokenResponse = {}
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {
+      const req = { method: 'POST', body: params }
+      const res = {
         json: sinon.stub()
       }
-      let provider = { host: {} }
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
 
       request.includeAccessToken = sinon.stub().resolves(tokenResponse)
@@ -1158,12 +1157,12 @@ describe('TokenRequest', () => {
 
     beforeEach(() => {
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {
+      const req = { method: 'POST', body: params }
+      const res = {
         json: sinon.stub(),
         set: sinon.stub()
       }
-      let provider = { host: {} }
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
       request.client = {}
     })
@@ -1173,7 +1172,7 @@ describe('TokenRequest', () => {
         .then(() => {
           expect(request.res.set).to.have.been.calledWith({
             'Cache-Control': 'no-store',
-            'Pragma': 'no-cache'
+            Pragma: 'no-cache'
           })
         })
     })
@@ -1184,7 +1183,7 @@ describe('TokenRequest', () => {
       return request.clientCredentialsGrant(request)
         .then(() => {
           expect(request.res.json).to.have.been.calledWith({
-            access_token: "accesst0ken", expires_in: 3000, token_type: "Bearer"
+            access_token: 'accesst0ken', expires_in: 3000, token_type: 'Bearer'
           })
         })
     })
@@ -1195,7 +1194,7 @@ describe('TokenRequest', () => {
       return request.clientCredentialsGrant(request)
         .then(() => {
           expect(request.res.json).to.have.been.calledWith({
-            access_token: "accesst0ken", token_type: "Bearer"
+            access_token: 'accesst0ken', token_type: 'Bearer'
           })
         })
     })
@@ -1209,7 +1208,7 @@ describe('TokenRequest', () => {
     let request, provider, res, authCode
 
     beforeEach(() => {
-      let req = {
+      const req = {
         method: 'POST',
         body: {
           code,
@@ -1332,9 +1331,9 @@ describe('TokenRequest', () => {
     beforeEach(() => {
       tokenResponse = {}
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {}
-      let provider = { host: {} }
+      const req = { method: 'POST', body: params }
+      const res = {}
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
 
       sinon.stub(AccessToken, 'issueForRequest')
@@ -1368,9 +1367,9 @@ describe('TokenRequest', () => {
     before(() => {
       tokenResponse = {}
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {}
-      let provider = { host: {} }
+      const req = { method: 'POST', body: params }
+      const res = {}
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
 
       sinon.stub(IDToken, 'issueForRequest')

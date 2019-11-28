@@ -16,12 +16,12 @@ const base64url = require('base64url')
  */
 function hashClaim (value, hashLength) {
   if (value) {
-    let alg = { name: `SHA-${hashLength}`}
-    let octets = new Buffer(value, 'ascii')
+    const alg = { name: `SHA-${hashLength}` }
+    const octets = Buffer.from(value, 'ascii')
 
     return crypto.subtle.digest(alg, new Uint8Array(octets)).then(digest => {
-      let hash = Buffer.from(digest)
-      let half = hash.slice(0, hash.byteLength / 2)
+      const hash = Buffer.from(digest)
+      const half = hash.slice(0, hash.byteLength / 2)
       return base64url(half)
     })
   }

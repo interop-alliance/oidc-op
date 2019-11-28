@@ -15,7 +15,7 @@ const sinonChai = require('sinon-chai')
 chai.use(sinonChai)
 chai.use(require('dirty-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -72,7 +72,7 @@ describe('OpenID Connect Provider', () => {
     })
 
     it('should initialize the provider keychain', () => {
-      let data = { issuer: 'https://example.com' }
+      const data = { issuer: 'https://example.com' }
 
       return Provider.from(data)
         .then(() => {
@@ -81,7 +81,7 @@ describe('OpenID Connect Provider', () => {
     })
 
     it('should return a Provider instance', () => {
-      let data = { issuer: 'https://example.com' }
+      const data = { issuer: 'https://example.com' }
 
       return Provider.from(data)
         .then(provider => {
@@ -102,7 +102,7 @@ describe('OpenID Connect Provider', () => {
    */
   describe('inject', () => {
     it('should set non-enumerable property', () => {
-      let provider = new Provider({ issuer: 'https://forge.anvil.io' })
+      const provider = new Provider({ issuer: 'https://forge.anvil.io' })
       expect(provider.injected).to.be.undefined()
       provider.inject({ injected: true })
       provider.injected.should.equal(true)
@@ -281,7 +281,6 @@ describe('OpenID Connect Provider', () => {
     before(() => {
       sinon.stub(Provider.prototype, 'generateKeyChain').resolves()
       sinon.stub(Provider.prototype, 'importKeyChain').resolves()
-
     })
 
     beforeEach(() => {
@@ -301,7 +300,7 @@ describe('OpenID Connect Provider', () => {
     })
 
     it('should import a keychain if serialized data is provided', () => {
-      let jwks = { keys: [] }
+      const jwks = { keys: [] }
       return provider.initializeKeyChain(jwks)
         .then(() => {
           expect(Provider.prototype.importKeyChain).to.have.been.calledWith(jwks)
@@ -316,8 +315,8 @@ describe('OpenID Connect Provider', () => {
       provider = new Provider({ issuer: 'https://example.com' })
     })
 
-    it('should return a new keychain', function() {
-      this.timeout(25000);
+    it('should return a new keychain', function () {
+      this.timeout(25000)
       return provider.generateKeyChain()
         .then(keys => {
           expect(keys).to.be.an.instanceof(KeyChain)
@@ -351,7 +350,7 @@ describe('OpenID Connect Provider', () => {
     })
 
     it('should restore the keychain from provided data', () => {
-      let data = {}
+      const data = {}
       return provider.importKeyChain(data)
         .then(() => {
           expect(KeyChain.restore).to.have.been.calledWith(data)
@@ -359,7 +358,7 @@ describe('OpenID Connect Provider', () => {
     })
 
     it('should set the generated keychain on the provider instance', () => {
-      let data = {}
+      const data = {}
       return provider.importKeyChain(data)
         .then(() => {
           expect(provider.keys).to.equal(kc)
@@ -367,7 +366,7 @@ describe('OpenID Connect Provider', () => {
     })
 
     it('should return the provider instance', () => {
-      let data = {}
+      const data = {}
       return provider.importKeyChain(data)
         .then(result => {
           expect(result).to.equal(provider)

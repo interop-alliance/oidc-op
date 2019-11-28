@@ -6,7 +6,6 @@
  * MemoryStore
  */
 class MemoryStore {
-
   /**
    * constructor
    */
@@ -23,7 +22,7 @@ class MemoryStore {
    * @returns {Promise}
    */
   get (collection, key) {
-    let coll = this.data[collection]
+    const coll = this.data[collection]
 
     if (!coll) {
       return Promise.reject(new Error(`Unknown collection "${collection}"`))
@@ -60,7 +59,7 @@ class MemoryStore {
    * @returns {Promise}
    */
   del (collection, key) {
-    let coll = this.data[collection]
+    const coll = this.data[collection]
 
     if (!coll) {
       return Promise.reject(new Error(`Unknown collection "${collection}"`))
@@ -69,7 +68,6 @@ class MemoryStore {
     delete coll[key]
     return Promise.resolve(true)
   }
-
 }
 
 /**

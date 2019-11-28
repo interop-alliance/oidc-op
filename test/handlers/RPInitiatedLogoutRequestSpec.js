@@ -2,7 +2,7 @@
 
 const chai = require('chai')
 const expect = chai.expect
-const sinon = require('sinon')
+// const sinon = require('sinon')
 const sinonChai = require('sinon-chai')
 chai.use(require('dirty-chai'))
 chai.use(sinonChai)
@@ -10,7 +10,7 @@ chai.should()
 const HttpMocks = require('node-mocks-http')
 
 const RPInitiatedLogoutRequest = require('../../src/handlers/RPInitiatedLogoutRequest')
-const IDToken = require('../../src/IDToken')
+// const IDToken = require('../../src/IDToken')
 
 const provider = {
   host: {
@@ -20,32 +20,32 @@ const provider = {
   }
 }
 
-async function issueIdToken (oidcProvider) {
-  const jwt = IDToken.issue(oidcProvider, {
-    sub: 'user123',
-    aud: 'https://op.example.com',
-    azp: 'client123'
-  })
-
-  return jwt.encode()
-}
+// async function issueIdToken (oidcProvider) {
+//   const jwt = IDToken.issue(oidcProvider, {
+//     sub: 'user123',
+//     aud: 'https://op.example.com',
+//     azp: 'client123'
+//   })
+//
+//   return jwt.encode()
+// }
 
 const postLogoutRedirectUri = 'https://rp.example.com/goodbye'
 const reqNoParams = HttpMocks.createRequest({ method: 'GET', params: {} })
 const reqWithParams = HttpMocks.createRequest({
   method: 'GET',
   query: {
-    'id_token_hint': {},
-    'state': 'abc123',
-    'post_logout_redirect_uri': postLogoutRedirectUri
+    id_token_hint: {},
+    state: 'abc123',
+    post_logout_redirect_uri: postLogoutRedirectUri
   }
 })
 
 describe('RPInitiatedLogoutRequest', () => {
   describe('constructor()', () => {
     it('should parse the incoming request params', () => {
-      let res = {}
-      let request = new RPInitiatedLogoutRequest(reqWithParams, res, provider)
+      const res = {}
+      const request = new RPInitiatedLogoutRequest(reqWithParams, res, provider)
 
       expect(request).to.have.property('params')
       expect(Object.keys(request.params).length).to.equal(3)
@@ -60,15 +60,15 @@ describe('RPInitiatedLogoutRequest', () => {
 
   describe('redirectToPostLogoutUri()', () => {
     it('should redirect to RP if logout uri provided', () => {
-      let res = HttpMocks.createResponse()
-      let req = HttpMocks.createRequest({
+      const res = HttpMocks.createResponse()
+      const req = HttpMocks.createRequest({
         method: 'GET',
         query: {
-          'post_logout_redirect_uri': postLogoutRedirectUri,
-          'state': '$tate'
+          post_logout_redirect_uri: postLogoutRedirectUri,
+          state: '$tate'
         }
       })
-      let request = new RPInitiatedLogoutRequest(req, res, provider)
+      const request = new RPInitiatedLogoutRequest(req, res, provider)
 
       request.redirectToPostLogoutUri()
 
@@ -78,8 +78,8 @@ describe('RPInitiatedLogoutRequest', () => {
     })
 
     it('should redirect to host default if no RP logout uri provided', () => {
-      let res = HttpMocks.createResponse()
-      let request = new RPInitiatedLogoutRequest(reqNoParams, res, provider)
+      const res = HttpMocks.createResponse()
+      const request = new RPInitiatedLogoutRequest(reqNoParams, res, provider)
 
       request.redirectToPostLogoutUri()
 

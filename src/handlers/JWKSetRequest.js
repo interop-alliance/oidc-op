@@ -10,7 +10,6 @@ const BaseRequest = require('./BaseRequest')
  * JWKSetRequest
  */
 class JWKSetRequest extends BaseRequest {
-
   /**
    * Request Handler
    *
@@ -28,5 +27,3 @@ class JWKSetRequest extends BaseRequest {
  * Export
  */
 module.exports = JWKSetRequest
-
-

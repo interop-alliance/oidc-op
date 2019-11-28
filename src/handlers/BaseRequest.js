@@ -11,12 +11,12 @@ const HandledError = require('../errors/HandledError')
 /**
  * Request Parameter Mapping
  */
-const PARAMS = { 'GET': 'query', 'POST': 'body' }
+const PARAMS = { GET: 'query', POST: 'body' }
 
 /**
  * Response Mode Mapping
  */
-const MODES = { 'query': '?', 'fragment': '#' }
+const MODES = { query: '?', fragment: '#' }
 
 /**
  * BaseRequest
@@ -25,7 +25,6 @@ const MODES = { 'query': '?', 'fragment': '#' }
  * Abstract class for implementing OpenID Connect request handlers.
  */
 class BaseRequest {
-
   /**
    * Request Handler
    *
@@ -59,7 +58,7 @@ class BaseRequest {
    * @returns {Object}
    */
   static getParams (request) {
-    let { req } = request
+    const { req } = request
     return req[PARAMS[req.method]] || {}
   }
 
@@ -70,7 +69,7 @@ class BaseRequest {
    * @returns {Array}
    */
   static getResponseTypes (request) {
-    let { params: { response_type: type } } = request
+    const { params: { response_type: type } } = request
     return (typeof type === 'string') ? type.split(' ') : []
   }
 
@@ -82,8 +81,8 @@ class BaseRequest {
    */
   static getResponseMode (request) {
     let mode
-    let { params } = request || {}
-    let { response_mode: responseMode, response_type: responseType } = params
+    const { params } = request || {}
+    const { response_mode: responseMode, response_type: responseType } = params
 
     if (responseMode) {
       mode = MODES[responseMode]
@@ -134,7 +133,7 @@ class BaseRequest {
    * @returns {string}
    */
   static responseHashUri (uri, data) {
-    let responseParams = (new URLSearchParams(data)).toString()
+    const responseParams = (new URLSearchParams(data)).toString()
 
     if (uri.hash) {
       // Base uri already has a hash fragments; append the response params to it
@@ -161,7 +160,7 @@ class BaseRequest {
   static responseQueryUri (uri, data) {
     const responseParams = new URLSearchParams(uri.search)
 
-    for (let param in data) {
+    for (const param in data) {
       responseParams.set(param, data[param])
     }
 
@@ -174,7 +173,7 @@ class BaseRequest {
    * 302 Redirect Response
    */
   redirect (data) {
-    let { res, params: { redirect_uri: uri, state }, responseMode } = this
+    const { res, params: { redirect_uri: uri, state }, responseMode } = this
 
     if (state) {
       data.state = state
@@ -184,7 +183,7 @@ class BaseRequest {
 
     res.redirect(responseUri)
 
-    let error = new HandledError('302 Redirect')
+    const error = new HandledError('302 Redirect')
 
     if (data.error) {
       error.error = data.error
@@ -198,8 +197,8 @@ class BaseRequest {
    * 401 Unauthorized Response
    */
   unauthorized (err) {
-    let { res } = this
-    let { realm, error, error_description: description } = err
+    const { res } = this
+    const { realm, error, error_description: description } = err
 
     res.set({
       'WWW-Authenticate':
@@ -219,11 +218,11 @@ class BaseRequest {
    * @param params.error_description {string}
    */
   forbidden (params) {
-    let {res} = this
+    const { res } = this
 
     res.status(403).send('Forbidden')
 
-    let error = new HandledError('403 Forbidden')
+    const error = new HandledError('403 Forbidden')
     error.error = params.error
     error.error_description = params.error_description
     throw error
@@ -237,16 +236,16 @@ class BaseRequest {
    * @param params.error_description {string}
    */
   badRequest (params) {
-    let {res} = this
+    const { res } = this
 
     res.set({
       'Cache-Control': 'no-store',
-      'Pragma': 'no-cache'
+      Pragma: 'no-cache'
     })
 
     res.status(400).json(params)
 
-    let error = new HandledError('400 Bad Request')
+    const error = new HandledError('400 Bad Request')
 
     error.error = params.error || 'invalid_request'
     error.error_description = params.error_description
@@ -287,8 +286,8 @@ class BaseRequest {
    */
   internalServerError (err) {
     // TODO: Debug logging here
-    let {res} = this
-    res.status(500).send('Internal Server Error')
+    const { res } = this
+    res.status(500).send('Internal Server Error:', err)
   }
 }
 
@@ -296,4 +295,3 @@ class BaseRequest {
  * Export
  */
 module.exports = BaseRequest
-

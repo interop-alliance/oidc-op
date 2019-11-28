@@ -8,7 +8,6 @@ const path = require('path')
  * JSONStore
  */
 class JSONStore {
-
   /**
    * constructor
    */
@@ -25,8 +24,8 @@ class JSONStore {
    * @returns {Promise}
    */
   get (collection, key) {
-    let directory = path.join(this.path, collection)
-    let descriptor = path.join(directory, `${key}.json`)
+    const directory = path.join(this.path, collection)
+    const descriptor = path.join(directory, `${key}.json`)
 
     return new Promise((resolve, reject) => {
       fs.readFile(descriptor, (err, result) => {
@@ -47,11 +46,11 @@ class JSONStore {
    * @returns {Promise}
    */
   put (collection, key, value) {
-    let directory = path.join(this.path, collection)
-    let descriptor = path.join(directory, `${key}.json`)
+    const directory = path.join(this.path, collection)
+    const descriptor = path.join(directory, `${key}.json`)
 
     return new Promise((resolve, reject) => {
-      let data = JSON.stringify(value, null, 2)
+      const data = JSON.stringify(value, null, 2)
 
       fs.writeFile(descriptor, data, (err) => {
         if (err) { return reject(err) }
@@ -69,8 +68,8 @@ class JSONStore {
    * @returns {Promise}
    */
   del (collection, key) {
-    let directory = path.join(this.path, collection)
-    let descriptor = path.join(directory, `${key}.json`)
+    const directory = path.join(this.path, collection)
+    const descriptor = path.join(directory, `${key}.json`)
 
     return new Promise((resolve, reject) => {
       fs.unlink(descriptor, (err) => {
@@ -79,7 +78,6 @@ class JSONStore {
       })
     })
   }
-
 }
 
 /**

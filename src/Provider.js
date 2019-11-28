@@ -1,9 +1,9 @@
+/* eslint-disable camelcase */
 'use strict'
 
 /**
  * Dependencies
  */
-const url = require('url')
 const KeyChain = require('@solid/keychain')
 const AuthenticationRequest = require('./handlers/AuthenticationRequest')
 const OpenIDConfigurationRequest = require('./handlers/OpenIDConfigurationRequest')
@@ -38,7 +38,6 @@ const DEFAULT_SUBJECT_TYPES_SUPPORTED = ['public']
  * OpenID Connect Provider
  */
 class Provider {
-
   /**
    * constructor
    */
@@ -99,14 +98,19 @@ class Provider {
     this.check_session_iframe = data.check_session_iframe
     this.end_session_endpoint = data.end_session_endpoint
 
-    this.authorization_endpoint = data['authorization_endpoint'] || url.resolve(issuer, '/authorize')
-    this.token_endpoint = data['token_endpoint'] || url.resolve(issuer, '/token')
-    this.userinfo_endpoint = data['userinfo_endpoint'] || url.resolve(issuer, '/userinfo')
-    this.jwks_uri = data['jwks_uri'] || url.resolve(issuer, '/jwks')
-    this.registration_endpoint = data['registration_endpoint'] || url.resolve(issuer, '/register')
-    this.check_session_iframe = data['check_session_iframe'] || url.resolve(issuer, '/session')
-    this.end_session_endpoint = data['end_session_endpoint'] || url.resolve(issuer, '/logout')
-
+    this.authorization_endpoint = data.authorization_endpoint ||
+      (new URL('/authorize', issuer)).toString()
+    this.token_endpoint = data.token_endpoint ||
+      (new URL('/token', issuer)).toString()
+    this.userinfo_endpoint = data.userinfo_endpoint ||
+      (new URL('/userinfo', issuer)).toString()
+    this.jwks_uri = data.jwks_uri || (new URL('/jwks', issuer)).toString()
+    this.registration_endpoint = data.registration_endpoint ||
+      (new URL('/register', issuer)).toString()
+    this.check_session_iframe = data.check_session_iframe ||
+      (new URL('/session', issuer)).toString()
+    this.end_session_endpoint = data.end_session_endpoint ||
+      (new URL('/logout', issuer)).toString()
   }
 
   /**

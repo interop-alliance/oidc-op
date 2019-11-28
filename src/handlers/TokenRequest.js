@@ -6,15 +6,15 @@
  */
 const BaseRequest = require('./BaseRequest')
 const AccessToken = require('../AccessToken')
-const AuthorizationCode = require('../AuthorizationCode')
+// const AuthorizationCode = require('../AuthorizationCode')
 const IDToken = require('../IDToken')
-const { JWT, JWK, JWKSet } = require('@solid/jose')
+const { JWT, JWK } = require('@solid/jose')
+const base64url = require('base64url')
 
 /**
  * TokenRequest
  */
 class TokenRequest extends BaseRequest {
-
   /**
    * Request Handler
    *
@@ -51,7 +51,7 @@ class TokenRequest extends BaseRequest {
    * @return {string}
    */
   static getGrantType (request) {
-    const {params} = request
+    const { params } = request
     return params.grant_type
   }
 
@@ -62,7 +62,7 @@ class TokenRequest extends BaseRequest {
    * @returns {Promise<TokenRequest>}
    */
   validate (request) {
-    const {params} = request
+    const { params } = request
 
     // MISSING GRANT TYPE
     if (!params.grant_type) {
@@ -203,12 +203,12 @@ class TokenRequest extends BaseRequest {
     const { req: { headers }, provider } = request
     const authorization = headers.authorization.split(' ')
     const scheme = authorization[0]
-    const credentials = new Buffer(authorization[1], 'base64')
+    const credentials = Buffer.from(authorization[1], 'base64')
       .toString('ascii')
       .split(':')
     const [id, secret] = credentials
 
-   // MALFORMED CREDENTIALS
+    // MALFORMED CREDENTIALS
     if (credentials.length !== 2) {
       return request.badRequest({
         error: 'unauthorized_client',
@@ -233,7 +233,6 @@ class TokenRequest extends BaseRequest {
     }
 
     return provider.backend.get('clients', id).then(client => {
-
       // UNKNOWN CLIENT
       if (!client) {
         return request.unauthorized({
@@ -277,7 +276,6 @@ class TokenRequest extends BaseRequest {
 
     return new Promise((resolve, reject) => {
       provider.backend.get('clients', id).then(client => {
-
         // UNKNOWN CLIENT
         if (!client) {
           return request.unauthorized({
@@ -309,7 +307,7 @@ class TokenRequest extends BaseRequest {
    * @returns {Promise<TokenRequest>}
    */
   clientSecretJWT (request) {
-    const { req: { body: { client_assertion: jwt } }, provider} = request
+    const { req: { body: { client_assertion: jwt } }, provider } = request
     const payloadB64u = jwt.split('.')[1]
     const payload = JSON.parse(base64url.decode(payloadB64u))
 
@@ -336,7 +334,7 @@ class TokenRequest extends BaseRequest {
           })
         }
 
-        let token = JWT.decode(jwt, client.client_secret)
+        const token = JWT.decode(jwt, client.client_secret)
 
         if (!token || token instanceof Error) {
           return request.badRequest({
@@ -439,11 +437,11 @@ class TokenRequest extends BaseRequest {
     const { res, client: { default_max_age: expires } } = request
 
     return AccessToken.issueForRequest(request, res).then(token => {
-      let response = {}
+      const response = {}
 
       res.set({
         'Cache-Control': 'no-store',
-        'Pragma': 'no-cache'
+        Pragma: 'no-cache'
       })
 
       response.access_token = token
@@ -455,17 +453,18 @@ class TokenRequest extends BaseRequest {
       res.json(response)
     })
   }
-  decodeRequestParam (request) {
-    let { params } = request
 
-    if (!params['request']) {
-      return Promise.resolve(request)  // Pass through, no request param present
+  decodeRequestParam (request) {
+    const { params } = request
+
+    if (!params.request) {
+      return Promise.resolve(request) // Pass through, no request param present
     }
 
     let requestJwt
 
     return Promise.resolve()
-      .then(() => JWT.decode(params['request']))
+      .then(() => JWT.decode(params.request))
 
       .catch(err => {
         request.redirect({
@@ -503,7 +502,7 @@ class TokenRequest extends BaseRequest {
     // Importing the key serves as additional validation
     return JWK.importKey(jwk)
       .then(importedJwk => {
-        this.cnfKey = importedJwk  // has a cryptoKey property
+        this.cnfKey = importedJwk // has a cryptoKey property
 
         return importedJwk
       })
@@ -519,7 +518,6 @@ class TokenRequest extends BaseRequest {
 
     if (grantType === 'authorization_code') {
       return provider.backend.get('codes', params.code).then(authorizationCode => {
-
         // UNKNOWN AUTHORIZATION CODE
         if (!authorizationCode) {
           return request.badRequest({
@@ -565,7 +563,7 @@ class TokenRequest extends BaseRequest {
         request.code = authorizationCode
 
         // TODO UPDATE AUTHORIZATION CODE TO REFLECT THAT IT'S BEEN USED
-        //authorizationCode.use().then(() => Promise.resolve(request))
+        // authorizationCode.use().then(() => Promise.resolve(request))
         return request
       })
     }
@@ -574,8 +572,8 @@ class TokenRequest extends BaseRequest {
   }
 
   validateRequestParam (requestJwt) {
-    let { params } = this
-    let { payload } = requestJwt
+    const { params } = this
+    const { payload } = requestJwt
 
     return Promise.resolve()
 
@@ -611,7 +609,7 @@ class TokenRequest extends BaseRequest {
         if (payload.response_type && payload.response_type !== params.response_type) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Mismatching response type in request object',
+            error_description: 'Mismatching response type in request object'
           })
         }
 
@@ -622,7 +620,7 @@ class TokenRequest extends BaseRequest {
         if (payload.scope && payload.scope !== params.scope) {
           return this.redirect({
             error: 'invalid_scope',
-            error_description: 'Mismatching scope in request object',
+            error_description: 'Mismatching scope in request object'
           })
         }
 
@@ -677,11 +675,11 @@ class TokenRequest extends BaseRequest {
       return Promise.resolve()
     }
 
-    let clientJwks = this.client.jwks
-    let registeredSigningAlg = this.client['request_object_signing_alg']
+    const clientJwks = this.client.jwks
+    const registeredSigningAlg = this.client.request_object_signing_alg
 
-    let signedRequest = requestJwt.header.alg !== 'none'
-    let signatureRequired = clientJwks ||
+    const signedRequest = requestJwt.header.alg !== 'none'
+    const signatureRequired = clientJwks ||
       (registeredSigningAlg && registeredSigningAlg !== 'none')
 
     if (!signedRequest && !signatureRequired) {
@@ -695,38 +693,38 @@ class TokenRequest extends BaseRequest {
           // No keys pre-registered, but the request is signed. Throw error
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Signed request object, but no jwks pre-registered',
+            error_description: 'Signed request object, but no jwks pre-registered'
           })
         }
 
         if (signedRequest && registeredSigningAlg === 'none') {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Signed request object, but no signature allowed by request_object_signing_alg',
+            error_description: 'Signed request object, but no signature allowed by request_object_signing_alg'
           })
         }
 
         if (!signedRequest && signatureRequired) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Signature required for request object',
+            error_description: 'Signature required for request object'
           })
         }
 
         if (registeredSigningAlg && requestJwt.header.alg !== registeredSigningAlg) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Request signed by algorithm that does not match registered request_object_signing_alg value',
+            error_description: 'Request signed by algorithm that does not match registered request_object_signing_alg value'
           })
         }
 
         // Request is signed. Validate signature against registered jwks
-        let keyMatch = requestJwt.resolveKeys(clientJwks)
+        const keyMatch = requestJwt.resolveKeys(clientJwks)
 
         if (!keyMatch) {
           return this.redirect({
             error: 'invalid_request',
-            error_description: 'Cannot resolve signing key for request object',
+            error_description: 'Cannot resolve signing key for request object'
           })
         }
 
@@ -735,7 +733,7 @@ class TokenRequest extends BaseRequest {
             if (!verified) {
               return this.redirect({
                 error: 'invalid_request',
-                error_description: 'Invalid request object signature',
+                error_description: 'Invalid request object signature'
               })
             }
           })
@@ -743,10 +741,7 @@ class TokenRequest extends BaseRequest {
   }
 }
 
-
 /**
  * Export
  */
 module.exports = TokenRequest
-
-

@@ -15,7 +15,7 @@ const sinon = require('sinon')
 chai.use(require('dirty-chai'))
 chai.use(require('sinon-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -34,9 +34,9 @@ describe('DynamicRegistrationRequest', () => {
   let request
 
   before(function () {
-    let configPath = path.join(__dirname, '..', 'config', 'provider.json')
+    const configPath = path.join(__dirname, '..', 'config', 'provider.json')
 
-    let storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 
     provider = new Provider(storedConfig)
 
@@ -50,7 +50,7 @@ describe('DynamicRegistrationRequest', () => {
     req = HttpMocks.createRequest({
       body: {
         client_id: 'https://app.example.com',
-        redirect_uris: [ 'https://app.example.com/callback' ]
+        redirect_uris: ['https://app.example.com/callback']
       }
     })
     res = HttpMocks.createResponse()
@@ -116,13 +116,13 @@ describe('DynamicRegistrationRequest', () => {
     })
 
     it('should return the request object', () => {
-      let result = request.validate(request)
+      const result = request.validate(request)
 
       expect(result).to.equal(result)
     })
 
     it('should set a registered client on the request object', () => {
-      let result = request.validate(request)
+      const result = request.validate(request)
 
       expect(result.client).to.be.an.instanceof(Client)
     })
@@ -130,7 +130,7 @@ describe('DynamicRegistrationRequest', () => {
 
   describe('register', () => {
     it('should store a registered client in the clients collection', () => {
-      let client = { client_id: 'client123' }
+      const client = { client_id: 'client123' }
 
       request.client = client
 
@@ -151,8 +151,8 @@ describe('DynamicRegistrationRequest', () => {
         .then(request => request.token(request))
         .then(result => {
           expect(result).to.equal(request)
-          let token = result.compact
-          expect(token.split('.').length).to.equal(3)  // is a JWT
+          const token = result.compact
+          expect(token.split('.').length).to.equal(3) // is a JWT
         })
     })
   })
@@ -174,16 +174,16 @@ describe('DynamicRegistrationRequest', () => {
     it('sets cache control response headers', () => {
       request.respond(request)
 
-      let headers = res._getHeaders()
+      const headers = res._getHeaders()
 
       expect(headers['cache-control']).to.equal('no-store')
-      expect(headers['pragma']).to.equal('no-cache')
+      expect(headers.pragma).to.equal('no-cache')
     })
 
     it('responds with a client registration object', () => {
       request.respond(request)
 
-      let registration = JSON.parse(res._getData())
+      const registration = JSON.parse(res._getData())
 
       expect(registration.registration_access_token).to.equal('t0ken')
       expect(registration.registration_client_uri)
@@ -196,7 +196,7 @@ describe('DynamicRegistrationRequest', () => {
 
       request.respond(request)
 
-      let registration = JSON.parse(res._getData())
+      const registration = JSON.parse(res._getData())
 
       expect(registration.client_secret_expires_at).to.equal(0)
     })
@@ -207,7 +207,7 @@ describe('DynamicRegistrationRequest', () => {
       return DynamicRegistrationRequest.handle(req, res, provider)
         .then(response => {
           expect(res._getStatusCode()).to.equal(201)
-          let registration = JSON.parse(res._getData())
+          const registration = JSON.parse(res._getData())
 
           expect(registration.registration_access_token).to.exist()
           expect(registration.response_types).to.eql(['code'])

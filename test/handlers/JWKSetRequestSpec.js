@@ -11,7 +11,7 @@ const HttpMocks = require('node-mocks-http')
  */
 chai.use(require('dirty-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -40,7 +40,7 @@ describe('JWKSetRequest', () => {
 
     expect(res._isJSON()).to.be.true()
 
-    let jwks = JSON.parse(res._getData())
+    const jwks = JSON.parse(res._getData())
 
     expect(jwks.keys).to.exist()
     expect(jwks.keys[0].alg).to.equal('RS256')

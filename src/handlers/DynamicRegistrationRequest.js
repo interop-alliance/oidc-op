@@ -6,7 +6,6 @@
  */
 const { JWT } = require('@solid/jose')
 const { random } = require('../crypto')
-const url = require('url')
 const BaseRequest = require('./BaseRequest')
 const Client = require('../Client')
 
@@ -14,7 +13,6 @@ const Client = require('../Client')
  * DynamicRegistrationRequest
  */
 class DynamicRegistrationRequest extends BaseRequest {
-
   /**
    * Request Handler
    *
@@ -58,8 +56,8 @@ class DynamicRegistrationRequest extends BaseRequest {
     }
 
     // generate a client id unless one is provided
-    if (!registration['client_id']) {
-      registration['client_id'] = request.identifier()
+    if (!registration.client_id) {
+      registration.client_id = request.identifier()
     }
 
     // generate a client secret for non-implicit clients
@@ -100,7 +98,7 @@ class DynamicRegistrationRequest extends BaseRequest {
   register (request) {
     const backend = request.provider.backend
     const client = request.client
-    const id = client['client_id']
+    const id = client.client_id
 
     return backend.put('clients', id, client).then(client => request)
   }
@@ -112,9 +110,9 @@ class DynamicRegistrationRequest extends BaseRequest {
    * @returns {Promise}
    */
   token (request) {
-    const {provider, client} = request
-    const {issuer, keys} = provider
-    const alg = client['id_token_signed_response_alg']
+    const { provider, client } = request
+    const { issuer, keys } = provider
+    const alg = client.id_token_signed_response_alg
 
     // create a registration access token
     const jwt = new JWT({
@@ -123,8 +121,8 @@ class DynamicRegistrationRequest extends BaseRequest {
       },
       payload: {
         iss: issuer,
-        aud: client['client_id'],
-        sub: client['client_id']
+        aud: client.client_id,
+        sub: client.client_id
       },
       key: keys.register.signing[alg].privateKey
     })
@@ -142,10 +140,10 @@ class DynamicRegistrationRequest extends BaseRequest {
    * @param {DynamicRegistrationRequest} request
    */
   respond (request) {
-    const {client, compact, provider, res} = request
+    const { client, compact, provider, res } = request
 
-    const clientUri = url.resolve(provider.issuer,
-      '/register/' + encodeURIComponent(client.client_id))
+    const clientUri = (new URL('/register/' +
+      encodeURIComponent(client.client_id), provider.issuer)).toString()
 
     const response = Object.assign({}, client, {
       registration_access_token: compact,
@@ -159,7 +157,7 @@ class DynamicRegistrationRequest extends BaseRequest {
 
     res.set({
       'Cache-Control': 'no-store',
-      'Pragma': 'no-cache'
+      Pragma: 'no-cache'
     })
 
     res.status(201).json(response)
@@ -190,11 +188,11 @@ class DynamicRegistrationRequest extends BaseRequest {
    * @returns {Boolean}
    */
   implicit (registration) {
-    const responseTypes = registration['response_types']
+    const responseTypes = registration.response_types
 
-    return !!(responseTypes
-      && responseTypes.length === 1
-      && responseTypes[0] === 'id_token token')
+    return !!(responseTypes &&
+      responseTypes.length === 1 &&
+      responseTypes[0] === 'id_token token')
   }
 }
 
