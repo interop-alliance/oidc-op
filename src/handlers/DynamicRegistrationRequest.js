@@ -20,28 +20,29 @@ class DynamicRegistrationRequest extends BaseRequest {
    * @param {HTTPResponse} res
    * @param {Provider} provider
    */
-  static handle (req, res, provider) {
-    const request = new DynamicRegistrationRequest(req, res, provider)
-
-    return Promise.resolve(request)
-      .then(request.validate)
-      .then(request.register)
-      .then(request.token)
-      .then(request.respond)
-      .catch(request.error.bind(request))
+  static async handle (req, res, provider) {
+    let request
+    try {
+      request = new DynamicRegistrationRequest(req, res, provider)
+      const registration = request.initRegistration()
+      request.client = request.initClient(registration)
+      await request.register()
+      request.compact = await request.token()
+      request.respond()
+    } catch (error) {
+      request.error(error)
+    }
   }
 
   /**
-   * Validate
+   * initRegistration
    *
-   * @param {DynamicRegistrationRequest} request
-   * @returns {DynamicRegistrationRequest}
+   * @returns {object} Initialized client registration
    */
-  validate (request) {
-    const registration = request.req.body
-
+  initRegistration () {
+    const registration = this.req.body
     if (!registration) {
-      return request.badRequest({
+      return this.badRequest({
         error: 'invalid_request',
         error_description: 'Missing registration request body'
       })
@@ -49,7 +50,7 @@ class DynamicRegistrationRequest extends BaseRequest {
 
     // Return an explicit error on missing redirect_uris
     if (!registration.redirect_uris) {
-      return request.badRequest({
+      return this.badRequest({
         error: 'invalid_request',
         error_description: 'Missing redirect_uris parameter'
       })
@@ -57,12 +58,12 @@ class DynamicRegistrationRequest extends BaseRequest {
 
     // generate a client id unless one is provided
     if (!registration.client_id) {
-      registration.client_id = request.identifier()
+      registration.client_id = this.identifier()
     }
 
     // generate a client secret for non-implicit clients
-    if (!request.implicit(registration)) {
-      registration.client_secret = request.secret()
+    if (!this.implicit(registration)) {
+      registration.client_secret = this.secret()
     }
 
     /**
@@ -72,45 +73,45 @@ class DynamicRegistrationRequest extends BaseRequest {
      * The domain, port, and scheme of this URL MUST be the same as that of a
      * registered Redirection URI value.
      */
+    return registration
+  }
 
+  initClient (registration) {
     // initialize and validate a client
     const client = new Client(registration)
     const validation = client.validate()
 
     if (!validation.valid) {
-      return request.badRequest({
+      return this.badRequest({
         error: 'invalid_request',
         error_description: 'Client validation error: ' +
           JSON.stringify(validation.error)
       })
     }
-
-    request.client = client
-    return request
+    return client
   }
 
   /**
    * register
    *
-   * @param {DynamicRegistrationRequest} request
    * @returns {Promise}
    */
-  register (request) {
-    const backend = request.provider.backend
-    const client = request.client
+  async register () {
+    const { client } = this
+    const backend = this.provider.backend
     const id = client.client_id
 
-    return backend.put('clients', id, client).then(client => request)
+    return backend.put('clients', id, client)
   }
 
   /**
    * token
    *
    * @param {DynamicRegistrationRequest} request
-   * @returns {Promise}
+   * @returns {Promise<string>} Encoded compact jwt
    */
-  token (request) {
-    const { provider, client } = request
+  async token () {
+    const { provider, client } = this
     const { issuer, keys } = provider
     const alg = client.id_token_signed_response_alg
 
@@ -128,19 +129,14 @@ class DynamicRegistrationRequest extends BaseRequest {
     })
 
     // sign the token
-    return jwt.encode().then(compact => {
-      request.compact = compact
-      return request
-    })
+    return jwt.encode()
   }
 
   /**
    * respond
-   *
-   * @param {DynamicRegistrationRequest} request
    */
-  respond (request) {
-    const { client, compact, provider, res } = request
+  respond () {
+    const { client, compact, provider, res } = this
 
     const clientUri = (new URL('/register/' +
       encodeURIComponent(client.client_id), provider.issuer)).toString()

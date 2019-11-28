@@ -33,7 +33,7 @@ describe('DynamicRegistrationRequest', () => {
   let req, res, provider
   let request
 
-  before(function () {
+  before(() => {
     const configPath = path.join(__dirname, '..', 'config', 'provider.json')
 
     const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
@@ -61,14 +61,14 @@ describe('DynamicRegistrationRequest', () => {
     sinon.spy(request, 'badRequest')
   })
 
-  describe('validate', () => {
+  describe('initRegistration', () => {
     it('should throw an error on missing registration', () => {
       request.req.body = undefined
 
       let thrownError
 
       try {
-        request.validate(request)
+        request.initRegistration()
       } catch (error) {
         thrownError = error
       }
@@ -84,7 +84,7 @@ describe('DynamicRegistrationRequest', () => {
       let thrownError
 
       try {
-        request.validate(request)
+        request.initRegistration()
       } catch (error) {
         thrownError = error
       }
@@ -98,10 +98,10 @@ describe('DynamicRegistrationRequest', () => {
       request.req.body.response_types = ['id_token token']
       sinon.spy(request, 'identifier')
 
-      request.validate(request)
+      const registration = request.initRegistration()
 
       expect(request.identifier).to.have.been.called()
-      expect(request.client.client_id).to.exist()
+      expect(registration.client_id).to.exist()
     })
 
     it('should generate a client_secret for non-implicit requests', () => {
@@ -109,51 +109,43 @@ describe('DynamicRegistrationRequest', () => {
 
       sinon.spy(request, 'secret')
 
-      request.validate(request)
+      const registration = request.initRegistration()
 
       expect(request.secret).to.have.been.called()
-      expect(request.client.client_secret).to.exist()
+      expect(registration.client_secret).to.exist()
     })
+  })
 
-    it('should return the request object', () => {
-      const result = request.validate(request)
+  describe('initClient', () => {
+    it('should return the initialized client', () => {
+      const client = request.initClient({
+        client_id: 'https://app.example.com',
+        redirect_uris: ['https://app.example.com/callback']
+      })
 
-      expect(result).to.equal(result)
-    })
-
-    it('should set a registered client on the request object', () => {
-      const result = request.validate(request)
-
-      expect(result.client).to.be.an.instanceof(Client)
+      expect(client).to.be.an.instanceof(Client)
     })
   })
 
   describe('register', () => {
-    it('should store a registered client in the clients collection', () => {
+    it('should store a registered client in the clients collection', async () => {
       const client = { client_id: 'client123' }
 
       request.client = client
 
-      return request.register(request)
-        .then(() => {
-          return provider.backend.get('clients', 'client123')
-        })
-        .then(storedClient => {
-          expect(storedClient).to.eql(client)
-        })
+      await request.register()
+      const storedClient = await provider.backend.get('clients', 'client123')
+      expect(storedClient).to.eql(client)
     })
   })
 
   describe('token', () => {
-    it('should create an access token', () => {
-      return Promise.resolve(request)
-        .then(request => request.validate(request))
-        .then(request => request.token(request))
-        .then(result => {
-          expect(result).to.equal(request)
-          const token = result.compact
-          expect(token.split('.').length).to.equal(3) // is a JWT
-        })
+    it('should create an access token', async () => {
+      const registration = request.initRegistration()
+      request.client = request.initClient(registration)
+      const token = await request.token()
+
+      expect(token.split('.').length).to.equal(3) // is a JWT
     })
   })
 
@@ -166,13 +158,13 @@ describe('DynamicRegistrationRequest', () => {
     })
 
     it('responds with a 201 status code', () => {
-      request.respond(request)
+      request.respond()
 
       expect(res._getStatusCode()).to.equal(201)
     })
 
     it('sets cache control response headers', () => {
-      request.respond(request)
+      request.respond()
 
       const headers = res._getHeaders()
 
@@ -181,7 +173,7 @@ describe('DynamicRegistrationRequest', () => {
     })
 
     it('responds with a client registration object', () => {
-      request.respond(request)
+      request.respond()
 
       const registration = JSON.parse(res._getData())
 
@@ -194,7 +186,7 @@ describe('DynamicRegistrationRequest', () => {
     it('sets the client_secret_expires_at property if applicable', () => {
       request.client.client_secret = 's33cret'
 
-      request.respond(request)
+      request.respond()
 
       const registration = JSON.parse(res._getData())
 
