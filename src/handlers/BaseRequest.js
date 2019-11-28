@@ -5,6 +5,7 @@
  * @ignore
  */
 const { URL, URLSearchParams } = require('whatwg-url')
+const { JWK } = require('@solid/jose')
 
 const HandledError = require('../errors/HandledError')
 
@@ -170,6 +171,26 @@ class BaseRequest {
   }
 
   /**
+   * loadCnfKey
+   *
+   * @description
+   * Loads the Proof of Possession confirmation key (from the `request` param)
+   *
+   * @see https://tools.ietf.org/html/rfc7800#section-3.1
+   * @see https://tools.ietf.org/html/draft-ietf-oauth-pop-key-distribution-03#section-5
+   *
+   * @param jwk {JWK}
+   *
+   * @returns {Promise<JWK>} Imported key
+   */
+  async loadCnfKey (jwk) {
+    // jwk.use = jwk.use || 'sig'  // make sure key usage is not omitted
+
+    // Importing the key serves as additional validation
+    return JWK.importKey(jwk) // has a cryptoKey property
+  }
+
+  /**
    * 302 Redirect Response
    */
   redirect (data) {
@@ -287,6 +308,7 @@ class BaseRequest {
   internalServerError (err) {
     // TODO: Debug logging here
     const { res } = this
+    console.log('Internal server error:', err)
     res.status(500).send('Internal Server Error:', err)
   }
 }

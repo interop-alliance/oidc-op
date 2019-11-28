@@ -9,7 +9,7 @@ const BaseRequest = require('./BaseRequest')
 const AccessToken = require('../AccessToken')
 const AuthorizationCode = require('../AuthorizationCode')
 const IDToken = require('../IDToken')
-const { JWT, JWK, JWKSet } = require('@solid/jose')
+const { JWT, JWKSet } = require('@solid/jose')
 const { random } = require('../crypto')
 const { URL } = require('whatwg-url')
 
@@ -24,19 +24,26 @@ class AuthenticationRequest extends BaseRequest {
    * @param {HTTPResponse} res
    * @param {Provider} provider
    */
-  static handle (req, res, provider) {
-    const { host } = provider
-    const request = new AuthenticationRequest(req, res, provider)
+  static async handle (req, res, provider) {
+    let request
+    try {
+      const { host } = provider
+      request = new AuthenticationRequest(req, res, provider)
+      request.client = await request.loadClient()
 
-    return Promise
-      .resolve(request)
-      .then(request.loadClient)
-      .then(request.decodeRequestParam)
-      .then(request.validate)
-      .then(host.authenticate)
-      .then(host.obtainConsent)
-      .then(request.authorize)
-      .catch(err => request.error(err))
+      const { cnfKey, params } = await request.decodeRequestParam()
+      request.cnfKey = cnfKey
+      request.params = params
+
+      request.validate()
+
+      host.authenticate(request)
+      host.obtainConsent(request)
+
+      await request.authorize()
+    } catch (error) {
+      request.error(error)
+    }
   }
 
   /**
@@ -59,33 +66,25 @@ class AuthenticationRequest extends BaseRequest {
    * @description
    * Loads the client registration from the backend store
    *
-   * @param request {AuthenticationRequest}
-   *
-   * @returns {Promise<AuthenticationRequest>}
+   * @returns {Promise<Client>}
    */
-  loadClient (request) {
-    const { provider, params } = request
+  async loadClient () {
+    const { provider, params } = this
 
     if (!params.client_id) {
       // An error for the missing client_id will be thrown in validate()
-      return Promise.resolve(request)
+      return
     }
 
-    return provider.backend.get('clients', params.client_id)
+    // client registration
+    const client = await provider.backend.get('clients', params.client_id)
 
-      .then(client => { // client registration
-        request.client = client
+    if (client && client.jwks) {
+      // pre-registered client keys (for signing request objects, etc)
+      client.jwks = await JWKSet.importKeys(client.jwks)
+    }
 
-        if (client && client.jwks) {
-          // pre-registered client keys (for signing request objects, etc)
-          return JWKSet.importKeys(client.jwks)
-            .then(importedJwks => {
-              client.jwks = importedJwks
-            })
-        }
-      })
-
-      .then(() => request)
+    return client
   }
 
   /**
@@ -96,75 +95,44 @@ class AuthenticationRequest extends BaseRequest {
    *
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RequestObject
    *
-   * @param request {AuthenticationRequest}
-   *
-   * @returns {Promise<AuthenticationRequest>}
+   * @returns {Promise<{cnfKey: object, params: object}>} Request params, with
+   *    decoded 'request' JWT
    */
-  decodeRequestParam (request) {
-    const { params } = request
+  async decodeRequestParam () {
+    const { params } = this
 
     if (!params.request) {
-      return Promise.resolve(request) // Pass through, no request param present
+      return { params } // Pass through, no request param present
     }
 
     let requestJwt
-
-    return Promise.resolve()
-      .then(() => JWT.decode(params.request))
-
-      .catch(err => {
-        request.redirect({
-          error: 'invalid_request_object',
-          error_description: err.message
-        })
+    try {
+      requestJwt = await JWT.decode(params.request)
+    } catch (error) {
+      // Re-throw
+      this.redirect({
+        error: 'invalid_request_object',
+        error_description: error.message
       })
+    }
 
-      .then(jwt => { requestJwt = jwt })
-
-      .then(() => {
-        if (requestJwt.payload.key) {
-          return request.loadCnfKey(requestJwt.payload.key)
-            .catch(err => {
-              request.redirect({
-                error: 'invalid_request_object',
-                error_description: 'Error importing cnf key: ' + err.message
-              })
-            })
-        }
+    let cnfKey
+    try {
+      cnfKey = await this.loadCnfKey(requestJwt.payload.key)
+    } catch (error) {
+      console.log(error)
+      this.redirect({
+        error: 'invalid_request_object',
+        error_description: 'Error importing cnf key: ' + error.message
       })
+    }
 
-      .then(() => request.validateRequestParam(requestJwt))
+    await this.validateRequestParam(requestJwt)
 
-      .then(requestJwt => {
-        request.params = Object.assign({}, params, requestJwt.payload)
-      })
-
-      .then(() => request)
-  }
-
-  /**
-   * loadCnfKey
-   *
-   * @description
-   * Loads the Proof of Possession confirmation key (from the `request` param)
-   *
-   * @see https://tools.ietf.org/html/rfc7800#section-3.1
-   * @see https://tools.ietf.org/html/draft-ietf-oauth-pop-key-distribution-03#section-5
-   *
-   * @param jwk {JWK}
-   *
-   * @returns {Promise<JWK>} Imported key
-   */
-  loadCnfKey (jwk) {
-    // jwk.use = jwk.use || 'sig'  // make sure key usage is not omitted
-
-    // Importing the key serves as additional validation
-    return JWK.importKey(jwk)
-      .then(importedJwk => {
-        this.cnfKey = importedJwk // has a cryptoKey property
-
-        return importedJwk
-      })
+    return {
+      cnfKey,
+      params: Object.assign({}, params, requestJwt.payload)
+    }
   }
 
   /**
@@ -349,16 +317,14 @@ class AuthenticationRequest extends BaseRequest {
   /**
    * Validate Request
    *
-   * @param {AuthenticationRequest} request
-   *
-   * @returns {AuthenticationRequest}
+   * @throws {Error}
    */
-  validate (request) {
-    const { params, client } = request
+  validate () {
+    const { params, client } = this
 
     // CLIENT ID IS REQUIRED
     if (!params.client_id) {
-      return request.forbidden({
+      return this.forbidden({
         error: 'unauthorized_client',
         error_description: 'Missing client id'
       })
@@ -366,7 +332,7 @@ class AuthenticationRequest extends BaseRequest {
 
     // REDIRECT URI IS REQUIRED
     if (!params.redirect_uri) {
-      return request.badRequest({
+      return this.badRequest({
         error: 'invalid_request',
         error_description: 'Missing redirect uri'
       })
@@ -374,7 +340,7 @@ class AuthenticationRequest extends BaseRequest {
 
     // UNKNOWN CLIENT
     if (!client) {
-      return request.unauthorized({
+      return this.unauthorized({
         error: 'unauthorized_client',
         error_description: 'Unknown client'
       })
@@ -382,7 +348,7 @@ class AuthenticationRequest extends BaseRequest {
 
     // REDIRECT_URI MUST MATCH
     if (!AuthenticationRequest.validateRedirectUri(client.redirect_uris, params.redirect_uri)) {
-      return request.badRequest({
+      return this.badRequest({
         error: 'invalid_request',
         error_description: 'Mismatching redirect uri'
       })
@@ -390,7 +356,7 @@ class AuthenticationRequest extends BaseRequest {
 
     // RESPONSE TYPE IS REQUIRED
     if (!params.response_type) {
-      return request.redirect({
+      return this.redirect({
         error: 'invalid_request',
         error_description: 'Missing response type'
       })
@@ -398,7 +364,7 @@ class AuthenticationRequest extends BaseRequest {
 
     // SCOPE IS REQUIRED
     if (!params.scope) {
-      return request.redirect({
+      return this.redirect({
         error: 'invalid_scope',
         error_description: 'Missing scope'
       })
@@ -406,15 +372,15 @@ class AuthenticationRequest extends BaseRequest {
 
     // OPENID SCOPE IS REQUIRED
     if (!params.scope.includes('openid')) {
-      return request.redirect({
+      return this.redirect({
         error: 'invalid_scope',
         error_description: 'Missing openid scope'
       })
     }
 
     // NONCE MAY BE REQUIRED
-    if (!request.requiredNonceProvided()) {
-      return request.redirect({
+    if (!this.requiredNonceProvided()) {
+      return this.redirect({
         error: 'invalid_request',
         error_description: 'Missing nonce'
       })
@@ -422,8 +388,8 @@ class AuthenticationRequest extends BaseRequest {
 
     // RESPONSE TYPE MUST BE SUPPORTED
     // TODO is this something the client can configure too?
-    if (!request.supportedResponseType()) {
-      return request.redirect({
+    if (!this.supportedResponseType()) {
+      return this.redirect({
         error: 'unsupported_response_type',
         error_description: 'Unsupported response type'
       })
@@ -431,15 +397,14 @@ class AuthenticationRequest extends BaseRequest {
 
     // RESPONSE MODE MUST BE SUPPORTED
     // TODO is this something the client can configure too?
-    if (!request.supportedResponseMode()) {
-      return request.redirect({
+    if (!this.supportedResponseMode()) {
+      return this.redirect({
         error: 'unsupported_response_mode',
         error_description: 'Unsupported response mode'
       })
     }
 
     // VALID REQUEST
-    return request
   }
 
   static validateRedirectUri (registeredUris, redirectUri) {
@@ -508,14 +473,14 @@ class AuthenticationRequest extends BaseRequest {
   /**
    * Authorize
    *
-   * @param {AuthenticationRequest} request
    * @returns {Promise}
    */
-  authorize (request) {
+  async authorize () {
+    const request = this
     if (request.consent === true) {
-      return request.allow(request)
+      return request.allow()
     } else {
-      return request.deny(request)
+      return request.deny()
     }
   }
 
@@ -526,13 +491,13 @@ class AuthenticationRequest extends BaseRequest {
    * consent, build a response incorporating auth code, tokens, and session
    * state.
    */
-  allow (request) {
+  allow () {
     return Promise.resolve({}) // initialize empty response
-      .then(response => request.includeAccessToken(response))
-      .then(response => request.includeAuthorizationCode(response))
-      .then(response => request.includeIDToken(response))
+      .then(response => this.includeAccessToken(response))
+      .then(response => this.includeAuthorizationCode(response))
+      .then(response => this.includeIDToken(response))
       // .then(this.includeSessionState.bind(this))
-      .then(response => request.redirect(response))
+      .then(response => this.redirect(response))
       // do some error handling here
   }
 
@@ -541,7 +506,7 @@ class AuthenticationRequest extends BaseRequest {
    *
    * Handle user's rejection of the client.
    */
-  deny (request) {
+  deny () {
     this.redirect({
       error: 'access_denied'
     })

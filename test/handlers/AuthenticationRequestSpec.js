@@ -90,17 +90,17 @@ describe('AuthenticationRequest', () => {
       provider.backend.put('clients', 'uuid', client)
     })
 
-    it('should create and execute an AuthenticationRequest', () => {
+    it('should create and execute an AuthenticationRequest', async () => {
       req = HttpMocks.createRequest({ method: 'GET', query: params })
 
-      return AuthenticationRequest.handle(req, res, provider)
-        .then(() => {
-          const redirectUrl = res._getRedirectUrl()
-          expect(redirectUrl.startsWith('https://example.com/callback#access_token'))
-            .to.be.true()
+      await AuthenticationRequest.handle(req, res, provider)
 
-          expect(res._getStatusCode()).to.equal(302)
-        })
+      expect(res._getStatusCode()).to.not.equal(500)
+      const redirectUrl = res._getRedirectUrl()
+      expect(redirectUrl.startsWith('https://example.com/callback#access_token'))
+        .to.be.true()
+
+      expect(res._getStatusCode()).to.equal(302)
     })
   })
 
@@ -170,31 +170,23 @@ describe('AuthenticationRequest', () => {
         .resolves(client)
     })
 
-    it('should load and set on the request the client for the given client_id', () => {
-      return request.loadClient(request)
-        .then(returnedRequest => {
-          expect(returnedRequest.client).to.equal(client)
-        })
+    it('should load the client for the given client_id', async () => {
+      const loadedClient = await request.loadClient(request)
+      expect(loadedClient).to.equal(client)
     })
 
-    it('should pass through the request if no client_id present in params', () => {
+    it('should return undefined if no client_id present in params', async () => {
       delete request.params.client_id
 
-      return request.loadClient(request)
-        .then(returnedRequest => {
-          expect(returnedRequest).to.equal(request)
-          expect(returnedRequest.client).to.be.undefined()
-        })
+      const loadedClient = await request.loadClient(request)
+      expect(loadedClient).to.be.undefined()
     })
 
-    it('should pass through the request if no client is found for the client_id', () => {
-      request.provider.backend.get = sinon.stub().resolves(null)
+    it('should return undefined if no client found for client_id', async () => {
+      request.provider.backend.get = sinon.stub().resolves(undefined)
 
-      return request.loadClient(request)
-        .then(returnedRequest => {
-          expect(returnedRequest).to.equal(request)
-          expect(returnedRequest.client).to.be.null()
-        })
+      const loadedClient = await request.loadClient(request)
+      expect(loadedClient).to.be.undefined()
     })
   })
 
@@ -298,7 +290,7 @@ describe('AuthenticationRequest', () => {
       AuthenticationRequest.prototype.redirect.restore()
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
       params = {
         client_id: 'https://app.com', response_type: 'code id_token'
       }
@@ -325,52 +317,53 @@ describe('AuthenticationRequest', () => {
         }
       }, { filter: false })
 
-      return requestObject.encode()
-        .then(jwt => {
-          requestJwt = jwt
-        })
+      requestJwt = await requestObject.encode()
     })
 
-    it('should pass through the request if no request parameter exists', () => {
+    it('should pass through if no request parameter exists', async () => {
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       const request = new AuthenticationRequest(req, res, provider)
 
-      return request.decodeRequestParam(request)
-        .then(result => {
-          expect(result).to.equal(request)
-        })
+      const {
+        cnfKey, params: decodedParams
+      } = await request.decodeRequestParam(request)
+      expect(cnfKey).to.be.undefined()
+      expect(decodedParams).to.equal(params)
     })
 
-    it('should throw an error on an invalid request object', done => {
+    it('should throw an error on an invalid request object', async () => {
       // invalid_request_object
       params.request = 'invalid jwt'
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       const request = new AuthenticationRequest(req, res, provider)
 
-      request.decodeRequestParam(request)
-        .catch(() => {
-          expect(request.redirect).to.have.been.calledWith({
-            error: 'invalid_request_object',
-            error_description: 'Invalid JWT compact serialization'
-          })
-          done()
-        })
+      let thrownError
+      try {
+        await request.decodeRequestParam(request)
+      } catch (error) {
+        thrownError = error
+      }
+
+      expect(thrownError).to.exist()
+      expect(request.redirect).to.have.been.calledWith({
+        error: 'invalid_request_object',
+        error_description: 'Invalid JWT compact serialization'
+      })
     })
 
-    it('should validate the request object', () => {
+    it('should validate the request object', async () => {
       params.request = requestJwt
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       const request = new AuthenticationRequest(req, res, provider)
 
       sinon.spy(request, 'validateRequestParam')
+      request.loadCnfKey = sinon.stub().resolves()
 
-      return request.decodeRequestParam(request)
-        .then(() => {
-          expect(request.validateRequestParam).to.have.been.called()
-        })
+      await request.decodeRequestParam(request)
+      expect(request.validateRequestParam).to.have.been.called()
     })
 
-    it('should resolve with the argument (request object)', () => {
+    it('should resolve with cnfKey and decoded params', async () => {
       params = {
         response_type: 'code id_token',
         client_id: 'https://app.com',
@@ -378,14 +371,17 @@ describe('AuthenticationRequest', () => {
       }
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       const request = new AuthenticationRequest(req, res, provider)
+      request.loadCnfKey = sinon.stub().resolves({})
 
-      return request.decodeRequestParam(request)
-        .then(result => {
-          expect(result).to.equal(request)
-        })
+      const {
+        cnfKey, params: decodedParams
+      } = await request.decodeRequestParam(request)
+      expect(cnfKey).to.exist()
+      expect(decodedParams).to
+        .have.property('redirect_uri', 'https://app.com/callback')
     })
 
-    it('should assign its payload claims to request, superseding its params', () => {
+    it('should assign its payload claims to params', () => {
       params = {
         redirect_uri: 'whatever',
         request: requestJwt,
@@ -394,6 +390,7 @@ describe('AuthenticationRequest', () => {
       }
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       const request = new AuthenticationRequest(req, res, provider)
+      request.loadCnfKey = sinon.stub().resolves()
 
       return request.decodeRequestParam(request)
         .then(result => {
@@ -406,6 +403,7 @@ describe('AuthenticationRequest', () => {
       params.request = requestJwt
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       const request = new AuthenticationRequest(req, res, provider)
+      // request.loadCnfKey = sinon.stub().resolves()
 
       return request.decodeRequestParam(request)
         .then(result => {
@@ -846,9 +844,14 @@ describe('AuthenticationRequest', () => {
         request.client = client
       })
 
-      it('should return the request', () => {
-        const result = request.validate(request)
-        expect(result).to.equal(request)
+      it('should not throw an error', () => {
+        let thrownError
+        try {
+          request.validate(request)
+        } catch (error) {
+          thrownError = error
+        }
+        expect(thrownError).to.not.exist()
       })
     })
   })

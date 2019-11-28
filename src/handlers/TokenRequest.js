@@ -8,7 +8,7 @@ const BaseRequest = require('./BaseRequest')
 const AccessToken = require('../AccessToken')
 // const AuthorizationCode = require('../AuthorizationCode')
 const IDToken = require('../IDToken')
-const { JWT, JWK } = require('@solid/jose')
+const { JWT } = require('@solid/jose')
 const base64url = require('base64url')
 
 /**
@@ -477,7 +477,7 @@ class TokenRequest extends BaseRequest {
 
       .then(() => {
         if (requestJwt.payload.key) {
-          return request.loadCnfKey(requestJwt.payload.key)
+          return this.loadCnfKey(requestJwt.payload.key)
             .catch(err => {
               request.redirect({
                 error: 'invalid_request_object',
@@ -494,18 +494,6 @@ class TokenRequest extends BaseRequest {
       })
 
       .then(() => request)
-  }
-
-  loadCnfKey (jwk) {
-    // jwk.use = jwk.use || 'sig'  // make sure key usage is not omitted
-
-    // Importing the key serves as additional validation
-    return JWK.importKey(jwk)
-      .then(importedJwk => {
-        this.cnfKey = importedJwk // has a cryptoKey property
-
-        return importedJwk
-      })
   }
 
   /**
