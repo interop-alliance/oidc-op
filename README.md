@@ -1,10 +1,8 @@
 # OpenID Connect for Nodejs
 
-[![Build Status](https://travis-ci.org/solid/oidc-op.svg?branch=master)](https://travis-ci.org/solid/oidc-op)
-[![codecov](https://codecov.io/gh/solid/oidc-op/branch/master/graph/badge.svg)](https://codecov.io/gh/solid/oidc-op)
+[![Build Status](https://travis-ci.org/interop-alliance/oidc-op.svg?branch=master)](https://travis-ci.org/interop-alliance/oidc-op)
 
-
-This library aims to implement a full-featured OpenID Connect Provider for
+This library aims to implement a minimal OpenID Connect Provider for
 Nodejs. It is not intended to be used directly by most developers, but rather
 via a complete self-contained server such as Anvil Connect. Some applications
 require an embedded identity provider, such as entertainment or IoT appliances.
@@ -53,5 +51,5 @@ handing.
 
 [The MIT License](LICENSE.md)
 
-Copyright (c) 2016 [Anvil Research, Inc.](http://anvil.io)
-Copyright (c) 2017-2019 The Solid Project
+Copyright (c) 2016 [Anvil Research, Inc.](http://anvil.io)<br/>
+Copyright (c) 2017-2019 Dmitri Zagidulin and The Solid Project

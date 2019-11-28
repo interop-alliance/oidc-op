@@ -3,9 +3,9 @@ sudo: false
 language: node_js
 
 node_js:
-  - "10"
+  - "12"
 
-script: npm run coverage
+script: npm run test
 
 cache:
   directories:
