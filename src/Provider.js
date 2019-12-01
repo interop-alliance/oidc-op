@@ -193,17 +193,13 @@ class Provider {
    * @param data {Object} Parsed JSON of a serialized provider's .keys property
    * @returns {Promise<Provider>} Resolves to self, chainable
    */
-  importKeyChain (data) {
+  async importKeyChain (data) {
     if (!data) {
-      return Promise.reject(new Error('Cannot import empty keychain'))
+      throw new Error('Cannot import empty keychain')
     }
 
-    return KeyChain.restore(data)
-      .then(keychain => {
-        this.keys = keychain
-
-        return this
-      })
+    this.keys = await KeyChain.restore(data)
+    return this
   }
 
   /**
