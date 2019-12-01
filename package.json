@@ -10,8 +10,7 @@
     "test": "test"
   },
   "scripts": {
-    "coverage": "nyc --reporter=lcov mocha test",
-    "jsdoc": "jsdoc -c jsdoc.json -r",
+    "coverage": "nyc mocha test",
     "postversion": "git push --follow-tags",
     "preversion": "mocha test",
     "standard": "standard",
@@ -47,13 +46,12 @@
     "@solid/keychain": "^0.2.0",
     "base64url": "^3.0.1",
     "isomorphic-webcrypto": "^2.3.2",
-    "qs": "^6.9.0",
+    "qs": "^6.9.1",
     "whatwg-url": "^7.1.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "codecov": "^3.6.1",
     "dirty-chai": "^2.0.1",
     "mocha": "^6.2.2",
     "node-mocks-http": "^1.8.0",

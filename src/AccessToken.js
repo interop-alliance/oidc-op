@@ -4,7 +4,7 @@
 const { JWT } = require('@solid/jose')
 const { random } = require('./crypto')
 
-const DEFAULT_MAX_AGE = 1209600  // Default Access token expiration, in seconds
+const DEFAULT_MAX_AGE = 1209600 // Default Access token expiration, in seconds
 const DEFAULT_SIG_ALGORITHM = 'RS256'
 
 /**
@@ -62,7 +62,7 @@ class AccessToken extends JWT {
     const iat = options.iat || Math.floor(Date.now() / 1000)
     const max = options.max || DEFAULT_MAX_AGE
 
-    const exp = iat + max  // token expiration
+    const exp = iat + max // token expiration
 
     const iss = issuer
     const key = keys.token.signing[alg].privateKey
@@ -79,78 +79,63 @@ class AccessToken extends JWT {
   /**
    * issue
    */
-  static issueForRequest (request, response) {
+  static async issueForRequest (request, response) {
     const { params, code, provider, client, subject, defaultRsUri } = request
 
-    const alg = client['access_token_signed_response_alg'] || DEFAULT_SIG_ALGORITHM
+    const alg = client.access_token_signed_response_alg || DEFAULT_SIG_ALGORITHM
     const jti = random(8)
     const iat = Math.floor(Date.now() / 1000)
     let aud, sub, max, scope
 
     // authentication request
     if (!code) {
-      aud =  [ client['client_id'] ]
-      if (defaultRsUri && defaultRsUri !== client['client_id']) {
+      aud = [client.client_id]
+      if (defaultRsUri && defaultRsUri !== client.client_id) {
         aud.push(defaultRsUri)
       }
-      sub = subject['_id']
-      max = parseInt(params['max_age']) || client['default_max_age'] || DEFAULT_MAX_AGE
+      sub = subject._id
+      max = parseInt(params.max_age) || client.default_max_age || DEFAULT_MAX_AGE
       scope = request.scope
 
     // token request
     } else {
-      aud = [ code.aud ]
+      aud = [code.aud]
       if (defaultRsUri && defaultRsUri !== code.aud) {
         aud.push(defaultRsUri)
       }
       sub = code.sub
-      max = parseInt(code['max']) || client['default_max_age'] || DEFAULT_MAX_AGE
+      max = parseInt(code.max) || client.default_max_age || DEFAULT_MAX_AGE
       scope = code.scope
     }
 
     const options = { aud, sub, scope, alg, jti, iat, max }
 
-    let header, payload
+    const jwt = AccessToken.issue(provider, options)
+    const header = jwt.header
+    const payload = jwt.payload
 
-    return Promise.resolve()
-      .then(() => AccessToken.issue(provider, options))
+    // set the response properties
+    response.access_token = await jwt.encode() // compact
+    response.token_type = 'Bearer'
+    response.expires_in = max
 
-      .then(jwt => {
-        header = jwt.header
-        payload = jwt.payload
+    // store access token by "jti" claim
+    await provider.backend.put('tokens', `${jti}`, { header, payload })
 
-        return jwt.encode()
-      })
+    // store access token by "refresh_token", if applicable
+    const responseTypes = request.responseTypes || []
+    let refresh
 
-      // set the response properties
-      .then(compact => {
-        response['access_token'] = compact
-        response['token_type'] = 'Bearer'
-        response['expires_in'] = max
-      })
+    if (code || responseTypes.includes('code')) {
+      refresh = random(16)
+    }
 
-      // store access token by "jti" claim
-      .then(() => {
-        return provider.backend.put('tokens', `${jti}`, { header, payload })
-      })
+    if (refresh) {
+      response.refresh_token = refresh
+      await provider.backend.put('refresh', `${refresh}`, { header, payload })
+    }
 
-      // store access token by "refresh_token", if applicable
-      .then(() => {
-        let responseTypes = request.responseTypes || []
-        let refresh
-
-        if (code || responseTypes.includes('code')) {
-          refresh = random(16)
-        }
-
-        if (refresh) {
-          response['refresh_token'] = refresh
-          return provider.backend.put('refresh', `${refresh}`, { header, payload })
-        }
-      })
-
-      // resolve the response
-      .then(() => response)
+    return response
   }
 }
 

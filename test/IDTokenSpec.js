@@ -14,7 +14,7 @@ const { JWT } = require('@solid/jose')
 chai.use(require('dirty-chai'))
 chai.use(require('chai-as-promised'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -31,9 +31,9 @@ describe('IDToken', () => {
   var provider
 
   before(function () {
-    let configPath = path.join(__dirname, 'config', 'provider.json')
+    const configPath = path.join(__dirname, 'config', 'provider.json')
 
-    let storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 
     provider = new Provider(storedConfig)
 
@@ -42,22 +42,22 @@ describe('IDToken', () => {
 
   describe('issueForRequest()', () => {
     let code
-    let subject = { _id: 'user123' }
+    const subject = { _id: 'user123' }
     let client
     let request, response
     let params, cnfKey
 
     describe('authentication request', () => {
       beforeEach(() => {
-        client = { 'client_id': 'client123' }
+        client = { client_id: 'client123' }
         params = { nonce: 'nonce123' }
         cnfKey = {
-          'kty': 'RSA',
-          'alg': 'RS256',
-          'n': 'xykqKb0EPomxUR-W_4oXSqFVwEoD_ZdqSiFfYH-a9r8yGfmugq-fLEuuolQSqrzR3l9U0prBBUeICYBjfuTdRinhMbqkwm8R7_U6dptHe2yILYHLAl0oEooSDKaFMe90h7yDaWiahOewnhh4BWRc_KRNATqx0XGfVmj7Vt4QQifk_xJYZPbLClf8YJ20wKPSebfDzTdh6Jv3sM6ASo5-1PQJNqvk7Dy632E3zIqcQn8wRqQ3hDCJmX3uvMQ3oQNCpJDSvO1kuB0msMWwBwzq3QtUZcDjXovVpi2j3SZfc8X1nlh2H4hge3ATwb1az6IX_OQgn4r1UIsKqIUsTocIrw',
-          'e': 'AQAB',
-          'key_ops': [ 'verify' ],
-          'ext': true
+          kty: 'RSA',
+          alg: 'RS256',
+          n: 'xykqKb0EPomxUR-W_4oXSqFVwEoD_ZdqSiFfYH-a9r8yGfmugq-fLEuuolQSqrzR3l9U0prBBUeICYBjfuTdRinhMbqkwm8R7_U6dptHe2yILYHLAl0oEooSDKaFMe90h7yDaWiahOewnhh4BWRc_KRNATqx0XGfVmj7Vt4QQifk_xJYZPbLClf8YJ20wKPSebfDzTdh6Jv3sM6ASo5-1PQJNqvk7Dy632E3zIqcQn8wRqQ3hDCJmX3uvMQ3oQNCpJDSvO1kuB0msMWwBwzq3QtUZcDjXovVpi2j3SZfc8X1nlh2H4hge3ATwb1az6IX_OQgn4r1UIsKqIUsTocIrw',
+          e: 'AQAB',
+          key_ops: ['verify'],
+          ext: true
         }
         request = { params, code, provider, client, subject, cnfKey }
         response = {}
@@ -66,7 +66,7 @@ describe('IDToken', () => {
       it('should issue an id token', () => {
         return IDToken.issueForRequest(request, response)
           .then(res => {
-            return JWT.decode(res['id_token'])
+            return JWT.decode(res.id_token)
           })
           .then(token => {
             expect(token.type).to.equal('JWS')
@@ -99,7 +99,7 @@ describe('IDToken', () => {
       it('should issue an id token', () => {
         return IDToken.issueForRequest(request, response)
           .then(res => {
-            return JWT.decode(res['id_token'])
+            return JWT.decode(res.id_token)
           })
           .then(token => {
             expect(token.type).to.equal('JWS')
@@ -133,7 +133,7 @@ describe('IDToken', () => {
     })
 
     it('should issue an id token', () => {
-      let token = IDToken.issue(provider, options)
+      const token = IDToken.issue(provider, options)
 
       expect(token.payload.iss).to.equal(provider.issuer)
       expect(token.payload.aud).to.equal('client123')
@@ -148,15 +148,15 @@ describe('IDToken', () => {
     it('should issue an id token with passed in values', () => {
       options.alg = 'RS512'
 
-      let randomId = random(8)
+      const randomId = random(8)
       options.jti = randomId
 
-      let now = Math.floor(Date.now() / 1000)
+      const now = Math.floor(Date.now() / 1000)
       options.iat = now
 
       options.max = 3000
 
-      let token = IDToken.issue(provider, options)
+      const token = IDToken.issue(provider, options)
 
       expect(token.payload.jti).to.equal(randomId)
       expect(token.payload.iat).to.equal(now)
@@ -166,7 +166,7 @@ describe('IDToken', () => {
     })
 
     it('should init with defaults', () => {
-      let token = IDToken.issue(provider, options)
+      const token = IDToken.issue(provider, options)
 
       expect(token.header.alg).to.equal(IDToken.DEFAULT_SIG_ALGORITHM)
       expect(token.header.kid).to.exist()

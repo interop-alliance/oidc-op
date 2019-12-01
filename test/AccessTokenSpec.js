@@ -15,7 +15,7 @@ const { random } = require('../src/crypto')
 chai.use(require('dirty-chai'))
 chai.use(require('chai-as-promised'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -32,9 +32,9 @@ describe('AccessToken', () => {
   var provider
 
   before(function () {
-    let configPath = path.join(__dirname, 'config', 'provider.json')
+    const configPath = path.join(__dirname, 'config', 'provider.json')
 
-    let storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 
     provider = new Provider(storedConfig)
 
@@ -44,11 +44,11 @@ describe('AccessToken', () => {
   })
 
   describe('issueForRequest()', () => {
-    let subject = { _id: 'user123' }
-    let client = { 'client_id': 'client123' }
+    const subject = { _id: 'user123' }
+    const client = { client_id: 'client123' }
     let request, response
-    let params = {}
-    let scope = ['token']
+    const params = {}
+    const scope = ['token']
     const defaultRsUri = 'https://rs.example.com'
 
     describe('authentication requests', () => {
@@ -62,10 +62,10 @@ describe('AccessToken', () => {
       it('should issue an access token', async () => {
         const res = await AccessToken.issueForRequest(request, response)
 
-        expect(res['token_type']).to.equal('Bearer')
-        expect(res['expires_in']).to.equal(1209600)
+        expect(res.token_type).to.equal('Bearer')
+        expect(res.expires_in).to.equal(1209600)
 
-        const token = await JWT.decode(res['access_token'])
+        const token = await JWT.decode(res.access_token)
 
         expect(token.type).to.equal('JWS')
         expect(token.header.alg).to.equal('RS256')
@@ -94,10 +94,10 @@ describe('AccessToken', () => {
       it('should issue an access token', () => {
         return AccessToken.issueForRequest(request, response)
           .then(res => {
-            expect(res['token_type']).to.equal('Bearer')
-            expect(res['expires_in']).to.equal(1209600)
+            expect(res.token_type).to.equal('Bearer')
+            expect(res.expires_in).to.equal(1209600)
 
-            return JWT.decode(res['access_token'])
+            return JWT.decode(res.access_token)
           })
           .then(token => {
             expect(token.type).to.equal('JWS')
@@ -122,7 +122,7 @@ describe('AccessToken', () => {
     })
 
     it('should issue an access token', () => {
-      let token = AccessToken.issue(provider, options)
+      const token = AccessToken.issue(provider, options)
 
       expect(token.payload.iss).to.equal(provider.issuer)
       expect(token.payload.aud).to.equal('client123')
@@ -133,15 +133,15 @@ describe('AccessToken', () => {
     it('should issue an access token with passed in values', () => {
       options.alg = 'RS512'
 
-      let randomId = random(8)
+      const randomId = random(8)
       options.jti = randomId
 
-      let now = Math.floor(Date.now() / 1000)
+      const now = Math.floor(Date.now() / 1000)
       options.iat = now
 
       options.max = 3000
 
-      let token = AccessToken.issue(provider, options)
+      const token = AccessToken.issue(provider, options)
 
       expect(token.payload.jti).to.equal(randomId)
       expect(token.payload.iat).to.equal(now)
@@ -151,7 +151,7 @@ describe('AccessToken', () => {
     })
 
     it('should init with defaults', () => {
-      let token = AccessToken.issue(provider, options)
+      const token = AccessToken.issue(provider, options)
 
       expect(token.header.alg).to.equal(AccessToken.DEFAULT_SIG_ALGORITHM)
       expect(token.header.kid).to.exist()

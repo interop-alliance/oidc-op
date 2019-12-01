@@ -7,6 +7,8 @@ const cwd = process.cwd()
 const path = require('path')
 const fs = require('fs')
 const chai = require('chai')
+chai.use(require('dirty-chai'))
+
 const sinon = require('sinon')
 const HttpMocks = require('node-mocks-http')
 const MemoryStore = require(path.join(cwd, 'test', 'backends', 'MemoryStore'))
@@ -18,7 +20,7 @@ const { JWT } = require('@solid/jose')
 chai.use(require('dirty-chai'))
 chai.use(require('sinon-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -36,7 +38,7 @@ const defaultRsUri = 'https://rs.example.com'
 describe('AuthenticationRequest', () => {
   const host = {
     authenticate: (request) => {
-      request.subject = { '_id': 'user1' }
+      request.subject = { _id: 'user1' }
       return request
     },
     obtainConsent: (request) => {
@@ -47,9 +49,9 @@ describe('AuthenticationRequest', () => {
   let provider, params, req, res, request
 
   before(function () {
-    let configPath = path.join(__dirname, '..', 'config', 'provider.json')
+    const configPath = path.join(__dirname, '..', 'config', 'provider.json')
 
-    let storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 
     provider = new Provider(storedConfig)
 
@@ -71,11 +73,11 @@ describe('AuthenticationRequest', () => {
    * Handle
    */
   describe('handle', () => {
-    let client = {
+    const client = {
       redirect_uris: ['https://example.com/callback'],
       client_id: 'uuid'
     }
-    let params = {
+    const params = {
       client_id: 'uuid',
       redirect_uri: 'https://example.com/callback',
       response_type: 'id_token token',
@@ -88,17 +90,17 @@ describe('AuthenticationRequest', () => {
       provider.backend.put('clients', 'uuid', client)
     })
 
-    it('should create and execute an AuthenticationRequest', () => {
+    it('should create and execute an AuthenticationRequest', async () => {
       req = HttpMocks.createRequest({ method: 'GET', query: params })
 
-      return AuthenticationRequest.handle(req, res, provider)
-        .then(() => {
-          let redirectUrl = res._getRedirectUrl()
-          expect(redirectUrl.startsWith('https://example.com/callback#access_token'))
-            .to.be.true()
+      await AuthenticationRequest.handle(req, res, provider)
 
-          expect(res._getStatusCode()).to.equal(302)
-        })
+      expect(res._getStatusCode()).to.not.equal(500)
+      const redirectUrl = res._getRedirectUrl()
+      expect(redirectUrl.startsWith('https://example.com/callback#access_token'))
+        .to.be.true()
+
+      expect(res._getStatusCode()).to.equal(302)
     })
   })
 
@@ -112,37 +114,37 @@ describe('AuthenticationRequest', () => {
 
     it('should set "params" from request query', () => {
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
       request.params.should.equal(params)
     })
 
     it('should set "params" from request body', () => {
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
       request.params.should.equal(params)
     })
 
     it('should set "responseTypes"', () => {
       params = { response_type: 'code id_token token' }
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
-      request.responseTypes.should.eql([ 'code', 'id_token', 'token' ])
+      const request = new AuthenticationRequest(req, res, provider)
+      request.responseTypes.should.eql(['code', 'id_token', 'token'])
     })
 
     it('should set "defaultRsUri" from provider', () => {
-      let req = { method: 'GET', query: params }
-      let request = new AuthenticationRequest(req, res, provider)
+      const req = { method: 'GET', query: params }
+      const request = new AuthenticationRequest(req, res, provider)
       request.defaultRsUri.should.eql(defaultRsUri)
     })
 
     it('should set "responseMode" default', () => {
-      let req = { method: 'GET', query: params }
-      let request = new AuthenticationRequest(req, res, provider)
+      const req = { method: 'GET', query: params }
+      const request = new AuthenticationRequest(req, res, provider)
       request.responseMode.should.eql('?')
     })
 
     it('should set "responseMode" explicitly', () => {
-      let req = {
+      const req = {
         method: 'GET',
         query: {
           response_type: 'id_token token',
@@ -150,7 +152,7 @@ describe('AuthenticationRequest', () => {
         }
       }
 
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
       request.responseMode.should.eql('?')
     })
   })
@@ -168,31 +170,23 @@ describe('AuthenticationRequest', () => {
         .resolves(client)
     })
 
-    it('should load and set on the request the client for the given client_id', () => {
-      return request.loadClient(request)
-        .then(returnedRequest => {
-          expect(returnedRequest.client).to.equal(client)
-        })
+    it('should load the client for the given client_id', async () => {
+      const loadedClient = await request.loadClient(request)
+      expect(loadedClient).to.equal(client)
     })
 
-    it('should pass through the request if no client_id present in params', () => {
-      delete request.params['client_id']
+    it('should return undefined if no client_id present in params', async () => {
+      delete request.params.client_id
 
-      return request.loadClient(request)
-        .then(returnedRequest => {
-          expect(returnedRequest).to.equal(request)
-          expect(returnedRequest.client).to.be.undefined()
-        })
+      const loadedClient = await request.loadClient(request)
+      expect(loadedClient).to.be.undefined()
     })
 
-    it('should pass through the request if no client is found for the client_id', () => {
-      request.provider.backend.get = sinon.stub().resolves(null)
+    it('should return undefined if no client found for client_id', async () => {
+      request.provider.backend.get = sinon.stub().resolves(undefined)
 
-      return request.loadClient(request)
-        .then(returnedRequest => {
-          expect(returnedRequest).to.equal(request)
-          expect(returnedRequest.client).to.be.null()
-        })
+      const loadedClient = await request.loadClient(request)
+      expect(loadedClient).to.be.undefined()
     })
   })
 
@@ -207,16 +201,16 @@ describe('AuthenticationRequest', () => {
     })
 
     it('should return true with a supported response type parameter', () => {
-      let params = { response_type: 'code id_token' }
-      let req = { method: 'GET', query: params }
-      let request = new AuthenticationRequest(req, res, provider)
+      const params = { response_type: 'code id_token' }
+      const req = { method: 'GET', query: params }
+      const request = new AuthenticationRequest(req, res, provider)
       request.supportedResponseType().should.equal(true)
     })
 
     it('should return false with an unsupported response type parameter', () => {
-      let params = { response_type: 'code id_token token' }
-      let req = { method: 'GET', query: params }
-      let request = new AuthenticationRequest(req, res, provider)
+      const params = { response_type: 'code id_token token' }
+      const req = { method: 'GET', query: params }
+      const request = new AuthenticationRequest(req, res, provider)
       request.supportedResponseType().should.equal(false)
     })
   })
@@ -232,22 +226,22 @@ describe('AuthenticationRequest', () => {
     })
 
     it('should return true with an undefined response mode parameter', () => {
-      let req = { method: 'GET', query: {} }
-      let request = new AuthenticationRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const request = new AuthenticationRequest(req, res, provider)
       request.supportedResponseMode().should.equal(true)
     })
 
     it('should return true with a supported response mode parameter', () => {
-      let params = { response_mode: 'fragment' }
-      let req = { method: 'GET', query: params }
-      let request = new AuthenticationRequest(req, res, provider)
+      const params = { response_mode: 'fragment' }
+      const req = { method: 'GET', query: params }
+      const request = new AuthenticationRequest(req, res, provider)
       request.supportedResponseMode().should.equal(true)
     })
 
     it('should return false with an unsupported response mode parameter', () => {
-      let params = { response_mode: 'unsupported' }
-      let req = { method: 'GET', query: params }
-      let request = new AuthenticationRequest(req, res, provider)
+      const params = { response_mode: 'unsupported' }
+      const req = { method: 'GET', query: params }
+      const request = new AuthenticationRequest(req, res, provider)
       request.supportedResponseMode().should.equal(false)
     })
   })
@@ -257,13 +251,13 @@ describe('AuthenticationRequest', () => {
    */
   describe('requiredNonceProvided', () => {
     it('should return true when nonce is not required', () => {
-      let req = { method: 'GET', query: { response_type: 'code' } }
-      let request = new AuthenticationRequest(req, {}, { host: {} })
+      const req = { method: 'GET', query: { response_type: 'code' } }
+      const request = new AuthenticationRequest(req, {}, { host: {} })
       request.requiredNonceProvided().should.equal(true)
     })
 
     it('should return true when nonce is required and provided', () => {
-      let req = {
+      const req = {
         method: 'GET',
         query: {
           response_type: 'id_token token',
@@ -271,13 +265,13 @@ describe('AuthenticationRequest', () => {
         }
       }
 
-      let request = new AuthenticationRequest(req, {}, { host: {} })
+      const request = new AuthenticationRequest(req, {}, { host: {} })
       request.requiredNonceProvided().should.equal(true)
     })
 
     it('should return false when nonce is required and missing', () => {
-      let req = { method: 'GET', query: { response_type: 'id_token token' } }
-      let request = new AuthenticationRequest(req, {}, { host: {} })
+      const req = { method: 'GET', query: { response_type: 'id_token token' } }
+      const request = new AuthenticationRequest(req, {}, { host: {} })
       request.requiredNonceProvided().should.equal(false)
     })
   })
@@ -296,94 +290,98 @@ describe('AuthenticationRequest', () => {
       AuthenticationRequest.prototype.redirect.restore()
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
       params = {
         client_id: 'https://app.com', response_type: 'code id_token'
       }
 
-      let key = provider.keys.token.signing['RS256'].privateKey
+      const key = provider.keys.token.signing.RS256.privateKey
 
-      let requestObject = new JWT({
+      const requestObject = new JWT({
         key,
         header: { alg: 'RS256' },
         payload: {
-          'aud': [ 'https://rs.com ', 'https://app.com' ],
-          'azp': 'https://app.com',
-          'response_type': 'code id_token',
-          'client_id': 'https://app.com',
-          'redirect_uri': 'https://app.com/callback',
-          'key': {
-            'kty': 'RSA',
-            'alg': 'RS256',
-            'n': 'xykqKb0EPomxUR-W_4oXSqFVwEoD_ZdqSiFfYH-a9r8yGfmugq-fLEuuolQSqrzR3l9U0prBBUeICYBjfuTdRinhMbqkwm8R7_U6dptHe2yILYHLAl0oEooSDKaFMe90h7yDaWiahOewnhh4BWRc_KRNATqx0XGfVmj7Vt4QQifk_xJYZPbLClf8YJ20wKPSebfDzTdh6Jv3sM6ASo5-1PQJNqvk7Dy632E3zIqcQn8wRqQ3hDCJmX3uvMQ3oQNCpJDSvO1kuB0msMWwBwzq3QtUZcDjXovVpi2j3SZfc8X1nlh2H4hge3ATwb1az6IX_OQgn4r1UIsKqIUsTocIrw',
-            'e': 'AQAB',
-            'key_ops': [ 'verify' ],
-            'ext': true
+          aud: ['https://rs.com ', 'https://app.com'],
+          azp: 'https://app.com',
+          response_type: 'code id_token',
+          client_id: 'https://app.com',
+          redirect_uri: 'https://app.com/callback',
+          key: {
+            kty: 'RSA',
+            alg: 'RS256',
+            n: 'xykqKb0EPomxUR-W_4oXSqFVwEoD_ZdqSiFfYH-a9r8yGfmugq-fLEuuolQSqrzR3l9U0prBBUeICYBjfuTdRinhMbqkwm8R7_U6dptHe2yILYHLAl0oEooSDKaFMe90h7yDaWiahOewnhh4BWRc_KRNATqx0XGfVmj7Vt4QQifk_xJYZPbLClf8YJ20wKPSebfDzTdh6Jv3sM6ASo5-1PQJNqvk7Dy632E3zIqcQn8wRqQ3hDCJmX3uvMQ3oQNCpJDSvO1kuB0msMWwBwzq3QtUZcDjXovVpi2j3SZfc8X1nlh2H4hge3ATwb1az6IX_OQgn4r1UIsKqIUsTocIrw',
+            e: 'AQAB',
+            key_ops: ['verify'],
+            ext: true
           }
         }
       }, { filter: false })
 
-      return requestObject.encode()
-        .then(jwt => {
-          requestJwt = jwt
-        })
+      requestJwt = await requestObject.encode()
     })
 
-    it('should pass through the request if no request parameter exists', () => {
+    it('should pass through if no request parameter exists', async () => {
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
 
-      return request.decodeRequestParam(request)
-        .then(result => {
-          expect(result).to.equal(request)
-        })
+      const {
+        cnfKey, params: decodedParams
+      } = await request.decodeRequestParam(request)
+      expect(cnfKey).to.be.undefined()
+      expect(decodedParams).to.equal(params)
     })
 
-    it('should throw an error on an invalid request object', done => {
+    it('should throw an error on an invalid request object', async () => {
       // invalid_request_object
       params.request = 'invalid jwt'
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
 
-      request.decodeRequestParam(request)
-        .catch(() => {
-          expect(request.redirect).to.have.been.calledWith({
-            error: 'invalid_request_object',
-            error_description: 'Invalid JWT compact serialization'
-          })
-          done()
-        })
+      let thrownError
+      try {
+        await request.decodeRequestParam(request)
+      } catch (error) {
+        thrownError = error
+      }
+
+      expect(thrownError).to.exist()
+      expect(request.redirect).to.have.been.calledWith({
+        error: 'invalid_request_object',
+        error_description: 'Invalid JWT compact serialization'
+      })
     })
 
-    it('should validate the request object', () => {
+    it('should validate the request object', async () => {
       params.request = requestJwt
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
 
       sinon.spy(request, 'validateRequestParam')
+      request.loadCnfKey = sinon.stub().resolves()
 
-      return request.decodeRequestParam(request)
-        .then(() => {
-          expect(request.validateRequestParam).to.have.been.called()
-        })
+      await request.decodeRequestParam(request)
+      expect(request.validateRequestParam).to.have.been.called()
     })
 
-    it('should resolve with the argument (request object)', () => {
+    it('should resolve with cnfKey and decoded params', async () => {
       params = {
-        'response_type': 'code id_token',
-        'client_id': 'https://app.com',
+        response_type: 'code id_token',
+        client_id: 'https://app.com',
         request: requestJwt
       }
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
+      request.loadCnfKey = sinon.stub().resolves({})
 
-      return request.decodeRequestParam(request)
-        .then(result => {
-          expect(result).to.equal(request)
-        })
+      const {
+        cnfKey, params: decodedParams
+      } = await request.decodeRequestParam(request)
+      expect(cnfKey).to.exist()
+      expect(decodedParams).to
+        .have.property('redirect_uri', 'https://app.com/callback')
     })
 
-    it('should assign its payload claims to request, superseding its params', () => {
+    it('should assign its payload claims to params', () => {
       params = {
         redirect_uri: 'whatever',
         request: requestJwt,
@@ -391,19 +389,21 @@ describe('AuthenticationRequest', () => {
         response_type: 'code id_token'
       }
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
+      request.loadCnfKey = sinon.stub().resolves()
 
       return request.decodeRequestParam(request)
         .then(result => {
           expect(result.params.redirect_uri).to.equal('https://app.com/callback')
-          expect(result.params.aud).to.eql([ 'https://rs.com ', 'https://app.com' ])
+          expect(result.params.aud).to.eql(['https://rs.com ', 'https://app.com'])
         })
     })
 
     it('should load the PoP key', () => {
       params.request = requestJwt
       req = HttpMocks.createRequest({ method: 'GET', query: params })
-      let request = new AuthenticationRequest(req, res, provider)
+      const request = new AuthenticationRequest(req, res, provider)
+      // request.loadCnfKey = sinon.stub().resolves()
 
       return request.decodeRequestParam(request)
         .then(result => {
@@ -501,7 +501,7 @@ describe('AuthenticationRequest', () => {
           expect(err).to.exist()
           expect(request.redirect).to.have.been.calledWith({
             error: 'invalid_request',
-            error_description: 'Mismatching response type in request object',
+            error_description: 'Mismatching response type in request object'
           })
           done()
         })
@@ -519,7 +519,7 @@ describe('AuthenticationRequest', () => {
           expect(err).to.exist()
           expect(request.redirect).to.have.been.calledWith({
             error: 'invalid_scope',
-            error_description: 'Mismatching scope in request object',
+            error_description: 'Mismatching scope in request object'
           })
           done()
         })
@@ -533,11 +533,10 @@ describe('AuthenticationRequest', () => {
     let request, provider, client
 
     describe('with missing client_id parameter', () => {
-
       before(() => {
         provider = { host: {} }
         sinon.stub(AuthenticationRequest.prototype, 'forbidden')
-        params = { 'redirect_uri': 'https://app.com/callback' }
+        params = { redirect_uri: 'https://app.com/callback' }
         req = HttpMocks.createRequest({ method: 'GET', query: params })
         request = new AuthenticationRequest(req, res, provider)
         request.validate(request)
@@ -826,8 +825,6 @@ describe('AuthenticationRequest', () => {
     })
 
     describe('with valid request', () => {
-      let promise
-
       before(() => {
         params = {
           client_id: 'uuid',
@@ -847,9 +844,14 @@ describe('AuthenticationRequest', () => {
         request.client = client
       })
 
-      it('should return the request', () => {
-        let result = request.validate(request)
-        expect(result).to.equal(request)
+      it('should not throw an error', () => {
+        let thrownError
+        try {
+          request.validate(request)
+        } catch (error) {
+          thrownError = error
+        }
+        expect(thrownError).to.not.exist()
       })
     })
   })
@@ -862,16 +864,12 @@ describe('AuthenticationRequest', () => {
   })
 
   describe('authorize', () => {
-    let request
-
     describe('with consent', () => {
-      let promise
-
       before(() => {
         sinon.stub(AuthenticationRequest.prototype, 'allow')
         request = new AuthenticationRequest(req, res, provider)
         request.consent = true
-        promise = request.authorize(request)
+        request.authorize(request)
       })
 
       after(() => {
@@ -879,7 +877,7 @@ describe('AuthenticationRequest', () => {
       })
 
       it('should grant access', () => {
-        request.allow.should.have.been.called
+        request.allow.should.have.been.called()
       })
     })
 
@@ -898,7 +896,7 @@ describe('AuthenticationRequest', () => {
       })
 
       it('should deny access', () => {
-        request.deny.should.have.been.called
+        request.deny.should.have.been.called()
       })
     })
   })
@@ -921,7 +919,7 @@ describe('AuthenticationRequest', () => {
       }
 
       request = new AuthenticationRequest(req, res, provider)
-      request.subject = { '_id': 'user1' }
+      request.subject = { _id: 'user1' }
       request.client = client
 
       request.redirect = (response) => { return Promise.resolve(response) }
@@ -944,7 +942,7 @@ describe('AuthenticationRequest', () => {
   describe('deny', () => {
     before(() => {
       sinon.stub(AuthenticationRequest.prototype, 'redirect')
-      let request = new AuthenticationRequest({}, {}, { host: {} })
+      const request = new AuthenticationRequest({}, {}, { host: {} })
       request.deny(request)
     })
 
@@ -1007,7 +1005,7 @@ describe('AuthenticationRequest', () => {
       }
       request = new AuthenticationRequest(req, res, provider)
       request.client = { client_id: 'client123' }
-      request.subject = { '_id': 'user1' }
+      request.subject = { _id: 'user1' }
       request.responseTypes = ['code']
     })
 
@@ -1065,10 +1063,10 @@ describe('AuthenticationRequest', () => {
 
   describe('includeSessionState', () => {
     it('should exist', () => {
-      let req = { method: 'GET', query: {} }
-      let res = {}
-      let provider = { host: {} }
-      let request = new AuthenticationRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const res = {}
+      const provider = { host: {} }
+      const request = new AuthenticationRequest(req, res, provider)
 
       expect(() => request.includeSessionState(request))
         .to.not.throw()

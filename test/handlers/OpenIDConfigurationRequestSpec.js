@@ -11,7 +11,7 @@ const HttpMocks = require('node-mocks-http')
  */
 chai.use(require('dirty-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -38,8 +38,8 @@ describe('OpenIDConfigurationRequest', () => {
 
     expect(res._isJSON()).to.be.true()
 
-    let config = JSON.parse(res._getData())
+    const config = JSON.parse(res._getData())
 
-    expect(config['authorization_endpoint']).to.equal('https://example.com/authorize')
+    expect(config.authorization_endpoint).to.equal('https://example.com/authorize')
   })
 })

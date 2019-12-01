@@ -10,7 +10,6 @@ const BaseRequest = require('./BaseRequest')
  * UserInfoRequest
  */
 class UserInfoRequest extends BaseRequest {
-
   /**
    * Request Handler
    *
@@ -26,5 +25,3 @@ class UserInfoRequest extends BaseRequest {
  * Export
  */
 module.exports = UserInfoRequest
-
-

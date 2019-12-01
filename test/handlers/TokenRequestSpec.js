@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict'
 
 /**
@@ -15,7 +16,7 @@ const HttpMocks = require('node-mocks-http')
 chai.use(require('dirty-chai'))
 chai.use(require('sinon-chai'))
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -28,7 +29,6 @@ const IDToken = require(path.join(cwd, 'src', 'IDToken'))
  * Tests
  */
 describe('TokenRequest', () => {
-
   /**
    * Handle
    */
@@ -42,9 +42,9 @@ describe('TokenRequest', () => {
 
     before(() => {
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {}
-      let provider = { host: {} }
+      const req = { method: 'POST', body: params }
+      const res = {}
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
     })
 
@@ -83,16 +83,16 @@ describe('TokenRequest', () => {
     })
 
     it('should return true with a supported response type parameter', () => {
-      let params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let request = new TokenRequest(req, res, provider)
+      const params = { grant_type: 'authorization_code' }
+      const req = { method: 'POST', body: params }
+      const request = new TokenRequest(req, res, provider)
       request.supportedGrantType().should.equal(true)
     })
 
     it('should return false with an unsupported response type parameter', () => {
-      let params = { grant_type: 'other' }
-      let req = { method: 'POST', body: params }
-      let request = new TokenRequest(req, res, provider)
+      const params = { grant_type: 'other' }
+      const req = { method: 'POST', body: params }
+      const request = new TokenRequest(req, res, provider)
       request.supportedGrantType().should.equal(false)
     })
   })
@@ -102,22 +102,27 @@ describe('TokenRequest', () => {
    */
   describe('validate', () => {
     describe('with valid params', () => {
-      it('should resolve with the request', () => {
-        let params = {
+      it('should not throw error', () => {
+        const params = {
           grant_type: 'authorization_code',
           code: 'c0de',
           redirect_uri: 'https://example.com/callback'
         }
-        let req = { method: 'POST', body: params }
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['authorization_code'] }
-        let request = new TokenRequest(req, res, provider)
+        const req = { method: 'POST', body: params }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['authorization_code'] }
+        const request = new TokenRequest(req, res, provider)
 
-        return request.validate(request)
-          .then(result => {
-            expect(result).to.equal(request)
-          })
+        let thrownError
+
+        try {
+          request.validate()
+        } catch (error) {
+          thrownError = error
+        }
+
+        expect(thrownError).to.not.exist()
       })
     })
 
@@ -132,7 +137,7 @@ describe('TokenRequest', () => {
         host = {}
         provider = { host }
         request = new TokenRequest(req, res, provider)
-        request.validate(request)
+        request.validate()
       })
 
       after(() => {
@@ -158,7 +163,7 @@ describe('TokenRequest', () => {
         host = {}
         provider = { host, grant_types_supported: ['authorization_code'] }
         request = new TokenRequest(req, res, provider)
-        request.validate(request)
+        request.validate()
       })
 
       after(() => {
@@ -184,7 +189,7 @@ describe('TokenRequest', () => {
         host = {}
         provider = { host, grant_types_supported: ['authorization_code'] }
         request = new TokenRequest(req, res, provider)
-        request.validate(request)
+        request.validate()
       })
 
       after(() => {
@@ -210,7 +215,7 @@ describe('TokenRequest', () => {
         host = {}
         provider = { host, grant_types_supported: ['authorization_code'] }
         request = new TokenRequest(req, res, provider)
-        request.validate(request)
+        request.validate()
       })
 
       after(() => {
@@ -236,7 +241,7 @@ describe('TokenRequest', () => {
         host = {}
         provider = { host, grant_types_supported: ['refresh_token'] }
         request = new TokenRequest(req, res, provider)
-        request.validate(request)
+        request.validate()
       })
 
       after(() => {
@@ -256,141 +261,29 @@ describe('TokenRequest', () => {
    * Authenticate Client
    */
   describe('authenticateClient', () => {
-    describe('with "client_secret_basic" and "client_secret_post" credentials', () => {
-      let request
-
-      before(() => {
-        sinon.stub(TokenRequest.prototype, 'badRequest')
-
-        let params = {
-          grant_type: 'client_credentials',
-          client_secret: 's3cr3t'
-        }
-        let req = {
-          method: 'POST',
-          body: params,
-          headers: {
-            authorization: 'Basic base64str'
-          }
-        }
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
-
-        request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
-      })
-
-      after(() => {
-        TokenRequest.prototype.badRequest.restore()
-      })
-
-      it('should respond "400 Bad Request"', () => {
-        request.badRequest.should.have.been.calledWith({
-          error: 'unauthorized_client',
-          error_description: 'Must use only one authentication method'
-        })
-      })
-    })
-
-    describe('with "client_secret_basic" and "client_secret_jwt" credentials', () => {
-      let request
-
-      before(() => {
-        sinon.stub(TokenRequest.prototype, 'badRequest')
-
-        let params = {
-          grant_type: 'client_credentials',
-          client_assertion_type: 'type'
-        }
-
-        let req = {
-          method: 'POST',
-          body: params,
-          headers: {
-            authorization: 'Basic base64str'
-          }
-        }
-
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
-
-        request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
-      })
-
-      after(() => {
-        TokenRequest.prototype.badRequest.restore()
-      })
-
-      it('should respond "400 Bad Request"', () => {
-        request.badRequest.should.have.been.calledWith({
-          error: 'unauthorized_client',
-          error_description: 'Must use only one authentication method'
-        })
-      })
-    })
-
-    describe('with "client_secret_post" and "client_secret_jwt" credentials', () => {
-      let request
-
-      before(() => {
-        sinon.stub(TokenRequest.prototype, 'badRequest')
-
-        let params = {
-          grant_type: 'client_credentials',
-          client_secret: 's3cr3t',
-          client_assertion_type: 'type'
-        }
-
-        let req = {
-          method: 'POST',
-          body: params
-        }
-
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
-
-        request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
-      })
-
-      after(() => {
-        TokenRequest.prototype.badRequest.restore()
-      })
-
-      it('should respond "400 Bad Request"', () => {
-        request.badRequest.should.have.been.calledWith({
-          error: 'unauthorized_client',
-          error_description: 'Must use only one authentication method'
-        })
-      })
-    })
 
     describe('with invalid client assertion type', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion_type: 'type'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
+        return request.authenticateClient()
       })
 
       after(() => {
@@ -403,31 +296,30 @@ describe('TokenRequest', () => {
           error_description: 'Invalid client assertion type'
         })
       })
-
     })
 
     describe('with missing client assertion', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
+        return request.authenticateClient()
       })
 
       after(() => {
@@ -445,24 +337,24 @@ describe('TokenRequest', () => {
     describe('with missing client credentials', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
+        return request.authenticateClient()
       })
 
       after(() => {
@@ -480,14 +372,14 @@ describe('TokenRequest', () => {
     describe('with well formed "client_secret_basic" credentials', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'clientSecretBasic')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params,
           headers: {
@@ -495,12 +387,12 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
+        return request.authenticateClient()
       })
 
       after(() => {
@@ -508,33 +400,33 @@ describe('TokenRequest', () => {
       })
 
       it('should invoke "client_secret_basic" authentication', () => {
-        request.clientSecretBasic.should.have.been.calledWith(request)
+        request.clientSecretBasic.should.have.been.called()
       })
     })
 
     describe('with well formed "client_secret_post" credentials', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'clientSecretPost')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_id: 'uuid',
           client_secret: 's3cr3t'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
+        return request.authenticateClient()
       })
 
       after(() => {
@@ -542,33 +434,33 @@ describe('TokenRequest', () => {
       })
 
       it('should invoke "client_secret_post" authentication', () => {
-        request.clientSecretPost.should.have.been.calledWith(request)
+        request.clientSecretPost.should.have.been.called()
       })
     })
 
     describe('with well formed "client_secret_jwt" credentials', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'clientSecretJWT')
 
-        let params = {
+        const params = {
           grant_type: 'client_credentials',
           client_assertion: 'jwt',
           client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
         }
 
-        let req = {
+        const req = {
           method: 'POST',
           body: params
         }
 
-        let res = {}
-        let host = {}
-        let provider = { host, grant_types_supported: ['client_credentials'] }
+        const res = {}
+        const host = {}
+        const provider = { host, grant_types_supported: ['client_credentials'] }
 
         request = new TokenRequest(req, res, provider)
-        request.authenticateClient(request)
+        return request.authenticateClient()
       })
 
       after(() => {
@@ -576,7 +468,7 @@ describe('TokenRequest', () => {
       })
 
       it('should invoke "client_secret_jwt" authentication', () => {
-        request.clientSecretJWT.should.have.been.calledWith(request)
+        request.clientSecretJWT.should.have.been.called()
       })
     })
   })
@@ -588,10 +480,10 @@ describe('TokenRequest', () => {
     describe('with malformed credentials', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
@@ -599,11 +491,11 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretBasic(request)
+        return request.clientSecretBasic()
       })
 
       after(() => {
@@ -621,22 +513,22 @@ describe('TokenRequest', () => {
     describe('with invalid authorization scheme', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Bearer ${new Buffer('id:secret').toString('base64')}`
+            authorization: `Bearer ${Buffer.from('id:secret').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretBasic(request)
+        return request.clientSecretBasic()
       })
 
       after(() => {
@@ -654,22 +546,22 @@ describe('TokenRequest', () => {
     describe('with missing credentials', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer(':').toString('base64')}`
+            authorization: `Basic ${Buffer.from(':').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretBasic(request)
+        return request.clientSecretBasic()
       })
 
       after(() => {
@@ -687,25 +579,25 @@ describe('TokenRequest', () => {
     describe('with unknown client', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer('id:secret').toString('base64')}`
+            authorization: `Basic ${Buffer.from('id:secret').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve(null) }
         }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretBasic(request)
+        return request.clientSecretBasic()
       })
 
       after(() => {
@@ -723,25 +615,25 @@ describe('TokenRequest', () => {
     describe('with mismatching secret', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${new Buffer('id:WRONG').toString('base64')}`
+            authorization: `Basic ${Buffer.from('id:WRONG').toString('base64')}`
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
         }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretBasic(request)
+        return request.clientSecretBasic()
       })
 
       after(() => {
@@ -757,39 +649,34 @@ describe('TokenRequest', () => {
     })
 
     describe('with valid credentials', () => {
-      let request, promise
-
       before(() => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
-
-        let req = {
-          method: 'POST',
-          body: {},
-          headers: {
-            authorization: `Basic ${new Buffer('id:secret').toString('base64')}`
-          }
-        }
-
-        let res = {}
-        let provider = {
-          host: {},
-          backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
-        }
-
-        request = new TokenRequest(req, res, provider)
-        promise = request.clientSecretBasic(request)
       })
 
       after(() => {
         TokenRequest.prototype.unauthorized.restore()
       })
 
-      it('should return a promise', () => {
-        promise.should.be.instanceof(Promise)
-      })
+      it('should resolve request', async () => {
+        const req = {
+          method: 'POST',
+          body: {},
+          headers: {
+            authorization: `Basic ${Buffer.from('id:secret').toString('base64')}`
+          }
+        }
 
-      it('should resolve request', () => {
-        promise.then(result => result.should.equal(request))
+        const res = {}
+        const client = { client_secret: 'secret' }
+        const provider = {
+          host: {},
+          backend: { get: () => Promise.resolve(client) }
+        }
+
+        const request = new TokenRequest(req, res, provider)
+        const loadedClient = await request.clientSecretBasic()
+
+        expect(loadedClient).to.equal(client)
       })
     })
   })
@@ -801,21 +688,21 @@ describe('TokenRequest', () => {
     describe('with missing client id', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_secret: 'secret'
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretPost(request)
+        return request.clientSecretPost()
       })
 
       after(() => {
@@ -833,21 +720,21 @@ describe('TokenRequest', () => {
     describe('with missing client secret', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_id: 'secret'
           }
         }
 
-        let res = {}
-        let provider = { host: {} }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretPost(request)
+        return request.clientSecretPost()
       })
 
       after(() => {
@@ -865,10 +752,10 @@ describe('TokenRequest', () => {
     describe('with unknown client', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_id: 'uuid',
@@ -876,14 +763,14 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve(null) }
         }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretPost(request)
+        return request.clientSecretPost()
       })
 
       after(() => {
@@ -901,10 +788,10 @@ describe('TokenRequest', () => {
     describe('with mismatching client secret', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'unauthorized')
 
-        let req = {
+        const req = {
           method: 'POST',
           body: {
             client_id: 'uuid',
@@ -912,14 +799,14 @@ describe('TokenRequest', () => {
           }
         }
 
-        let res = {}
-        let provider = {
+        const res = {}
+        const provider = {
           host: {},
           backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
         }
 
         request = new TokenRequest(req, res, provider)
-        request.clientSecretPost(request)
+        return request.clientSecretPost()
       })
 
       after(() => {
@@ -935,35 +822,9 @@ describe('TokenRequest', () => {
     })
 
     describe('with valid credentials', () => {
-      let client, request, promise
-
       before(() => {
         sinon.stub(TokenRequest.prototype, 'badRequest')
         sinon.stub(TokenRequest.prototype, 'unauthorized')
-
-        let client_id = 'uuid'
-        let req = {
-          method: 'POST',
-          body: {
-            client_id: client_id,
-            client_secret: 'secret'
-          }
-        }
-
-        client = { client_id, client_secret: 'secret' }
-
-        let res = {}
-        let provider = {
-          host: {},
-          backend: {
-            get: (collection, id) => {
-              return Promise.resolve(collection == 'clients' && id == client_id ? client : undefined)
-            }
-          }
-        }
-
-        request = new TokenRequest(req, res, provider)
-        promise = request.clientSecretPost(request)
       })
 
       after(() => {
@@ -971,17 +832,35 @@ describe('TokenRequest', () => {
         TokenRequest.prototype.unauthorized.restore()
       })
 
-      it('should return a promise', () => {
-        promise.should.be.instanceof(Promise)
-      })
+      it('should resolve request with client added', async () => {
+        const client_id = 'uuid'
+        const req = {
+          method: 'POST',
+          body: {
+            client_id: client_id,
+            client_secret: 'secret'
+          }
+        }
 
-      it('should resolve request with client added', () => {
+        const client = { client_id, client_secret: 'secret' }
+
+        const res = {}
+        const provider = {
+          host: {},
+          backend: {
+            get: (collection, id) => {
+              return Promise.resolve(collection === 'clients' && id === client_id ? client : undefined)
+            }
+          }
+        }
+
+        const request = new TokenRequest(req, res, provider)
+        const loadedClient = await request.clientSecretPost()
+
         request.badRequest.should.not.have.been.called()
         request.unauthorized.should.not.have.been.called()
-        return promise.then(result => {
-          result.client.should.equal(client)
-          result.should.equal(request)
-        })
+
+        expect(loadedClient).to.equal(client)
       })
     })
   })
@@ -1008,15 +887,15 @@ describe('TokenRequest', () => {
     describe('with "authorization_code" grant type', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'authorizationCodeGrant')
 
-        let req = { method: 'POST', body: { grant_type: 'authorization_code' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'authorization_code' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.grant(request)
+        return request.grant()
       })
 
       after(() => {
@@ -1024,22 +903,22 @@ describe('TokenRequest', () => {
       })
 
       it('should invoke authorizationCodeGrant', () => {
-        request.authorizationCodeGrant.should.have.been.calledWith(request)
+        request.authorizationCodeGrant.should.have.been.called()
       })
     })
 
     describe('with "refresh_token" grant type', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'refreshTokenGrant')
 
-        let req = { method: 'POST', body: { grant_type: 'refresh_token' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'refresh_token' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.grant(request)
+        return request.grant()
       })
 
       after(() => {
@@ -1047,22 +926,22 @@ describe('TokenRequest', () => {
       })
 
       it('should invoke refreshTokenGrant', () => {
-        request.refreshTokenGrant.should.have.been.calledWith(request)
+        request.refreshTokenGrant.should.have.been.called()
       })
     })
 
     describe('with "client_credentials" grant type', () => {
       let request
 
-      before(() => {
+      before(async () => {
         sinon.stub(TokenRequest.prototype, 'clientCredentialsGrant')
 
-        let req = { method: 'POST', body: { grant_type: 'client_credentials' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'client_credentials' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
-        request.grant(request)
+        return request.grant()
       })
 
       after(() => {
@@ -1070,7 +949,7 @@ describe('TokenRequest', () => {
       })
 
       it('should invoke clientCredentialsGrant', () => {
-        request.clientCredentialsGrant.should.have.been.calledWith(request)
+        request.clientCredentialsGrant.should.have.been.called()
       })
     })
 
@@ -1078,17 +957,23 @@ describe('TokenRequest', () => {
       let request
 
       before(() => {
-        let req = { method: 'POST', body: { grant_type: 'noyoudint' } }
-        let res = {}
-        let provider = { host: {} }
+        const req = { method: 'POST', body: { grant_type: 'noyoudint' } }
+        const res = {}
+        const provider = { host: {} }
 
         request = new TokenRequest(req, res, provider)
       })
 
-      it('should throw and error', () => {
-        expect(() => {
-          request.grant(request)
-        }).to.throw('Unsupported response type')
+      it('should throw and error', async () => {
+        let thrownError
+
+        try {
+          await request.grant()
+        } catch (error) {
+          thrownError = error
+        }
+        expect(thrownError).to.exist()
+        expect(thrownError.message).to.match(/Unsupported response type/)
       })
     })
   })
@@ -1102,11 +987,11 @@ describe('TokenRequest', () => {
     beforeEach(() => {
       tokenResponse = {}
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {
+      const req = { method: 'POST', body: params }
+      const res = {
         json: sinon.stub()
       }
-      let provider = { host: {} }
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
 
       request.includeAccessToken = sinon.stub().resolves(tokenResponse)
@@ -1114,21 +999,21 @@ describe('TokenRequest', () => {
     })
 
     it('should issue an access token', () => {
-      return request.authorizationCodeGrant(request)
+      return request.authorizationCodeGrant()
         .then(() => {
           expect(request.includeAccessToken).to.have.been.called()
         })
     })
 
     it('should issue an id token', () => {
-      return request.authorizationCodeGrant(request)
+      return request.authorizationCodeGrant()
         .then(() => {
           expect(request.includeIDToken).to.have.been.calledWith(tokenResponse)
         })
     })
 
     it('should send a response in json format', () => {
-      return request.authorizationCodeGrant(request)
+      return request.authorizationCodeGrant()
         .then(() => {
           expect(request.res.json).to.have.been.calledWith(tokenResponse)
         })
@@ -1158,22 +1043,22 @@ describe('TokenRequest', () => {
 
     beforeEach(() => {
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {
+      const req = { method: 'POST', body: params }
+      const res = {
         json: sinon.stub(),
         set: sinon.stub()
       }
-      let provider = { host: {} }
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
       request.client = {}
     })
 
     it('should set the cache control response headers', () => {
-      return request.clientCredentialsGrant(request)
+      return request.clientCredentialsGrant()
         .then(() => {
           expect(request.res.set).to.have.been.calledWith({
             'Cache-Control': 'no-store',
-            'Pragma': 'no-cache'
+            Pragma: 'no-cache'
           })
         })
     })
@@ -1181,10 +1066,10 @@ describe('TokenRequest', () => {
     it('should send the json response', () => {
       request.client.default_max_age = 3000
 
-      return request.clientCredentialsGrant(request)
+      return request.clientCredentialsGrant()
         .then(() => {
           expect(request.res.json).to.have.been.calledWith({
-            access_token: "accesst0ken", expires_in: 3000, token_type: "Bearer"
+            access_token: 'accesst0ken', expires_in: 3000, token_type: 'Bearer'
           })
         })
     })
@@ -1192,10 +1077,10 @@ describe('TokenRequest', () => {
     it('should only set the expires_in property if applicable', () => {
       request.client.default_max_age = undefined
 
-      return request.clientCredentialsGrant(request)
+      return request.clientCredentialsGrant()
         .then(() => {
           expect(request.res.json).to.have.been.calledWith({
-            access_token: "accesst0ken", token_type: "Bearer"
+            access_token: 'accesst0ken', token_type: 'Bearer'
           })
         })
     })
@@ -1209,7 +1094,7 @@ describe('TokenRequest', () => {
     let request, provider, res, authCode
 
     beforeEach(() => {
-      let req = {
+      const req = {
         method: 'POST',
         body: {
           code,
@@ -1245,19 +1130,17 @@ describe('TokenRequest', () => {
       sinon.spy(request, 'badRequest')
     })
 
-    it('should pass through the request if grant type is not authorization_code', () => {
+    it('should pass through the request if grant type is not authorization_code', async () => {
       request.grantType = 'something'
 
-      return request.verifyAuthorizationCode(request)
-        .then(result => {
-          expect(result).to.equal(request)
-        })
+      const result = await request.verifyAuthorizationCode()
+      expect(result).to.be.undefined()
     })
 
     it('should throw an error when no saved authorization code is found', done => {
       provider.backend.get = sinon.stub().resolves(null)
 
-      request.verifyAuthorizationCode(request)
+      request.verifyAuthorizationCode()
         .catch(err => {
           expect(err.error).to.equal('invalid_grant')
           expect(err.error_description).to.equal('Authorization not found')
@@ -1269,7 +1152,7 @@ describe('TokenRequest', () => {
     it('should throw an error when the auth code was previously used', done => {
       authCode.used = true
 
-      request.verifyAuthorizationCode(request)
+      request.verifyAuthorizationCode()
         .catch(err => {
           expect(err.error).to.equal('invalid_grant')
           expect(err.error_description).to.equal('Authorization code invalid')
@@ -1281,7 +1164,7 @@ describe('TokenRequest', () => {
     it('should throw an error when the auth code is expired', done => {
       authCode.exp = Math.floor(Date.now() / 1000) - 1000
 
-      request.verifyAuthorizationCode(request)
+      request.verifyAuthorizationCode()
         .catch(err => {
           expect(err.error).to.equal('invalid_grant')
           expect(err.error_description).to.equal('Authorization code expired')
@@ -1293,7 +1176,7 @@ describe('TokenRequest', () => {
     it('should throw an error on redirect_uri mismatch', done => {
       authCode.redirect_uri = 'something'
 
-      request.verifyAuthorizationCode(request)
+      request.verifyAuthorizationCode()
         .catch(err => {
           expect(err.error).to.equal('invalid_grant')
           expect(err.error_description).to.equal('Mismatching redirect uri')
@@ -1305,7 +1188,7 @@ describe('TokenRequest', () => {
     it('should throw an error on mismatching client id', done => {
       authCode.aud = 'someOtherClient'
 
-      request.verifyAuthorizationCode(request)
+      request.verifyAuthorizationCode()
         .catch(err => {
           expect(err.error).to.equal('invalid_grant')
           expect(err.error_description).to.equal('Mismatching client id')
@@ -1314,12 +1197,9 @@ describe('TokenRequest', () => {
         })
     })
 
-    it('should set the request code when successful', () => {
-      return request.verifyAuthorizationCode(request)
-        .then(result => {
-          expect(result).to.equal(request)
-          expect(request.code).to.equal(authCode)
-        })
+    it('should set the request code when successful', async () => {
+      const result = await request.verifyAuthorizationCode()
+      expect(result).to.equal(authCode)
     })
   })
 
@@ -1332,9 +1212,9 @@ describe('TokenRequest', () => {
     beforeEach(() => {
       tokenResponse = {}
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {}
-      let provider = { host: {} }
+      const req = { method: 'POST', body: params }
+      const res = {}
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
 
       sinon.stub(AccessToken, 'issueForRequest')
@@ -1345,12 +1225,10 @@ describe('TokenRequest', () => {
       AccessToken.issueForRequest.restore()
     })
 
-    it('should issue an access token', () => {
-      return request.includeAccessToken(tokenResponse)
-        .then(() => {
-          expect(AccessToken.issueForRequest).to.have.been
-            .calledWith(request, tokenResponse)
-        })
+    it('should issue an access token', async () => {
+      await request.includeAccessToken(tokenResponse)
+      expect(AccessToken.issueForRequest).to.have.been
+        .calledWith(request, tokenResponse)
     })
   })
 
@@ -1368,9 +1246,9 @@ describe('TokenRequest', () => {
     before(() => {
       tokenResponse = {}
       params = { grant_type: 'authorization_code' }
-      let req = { method: 'POST', body: params }
-      let res = {}
-      let provider = { host: {} }
+      const req = { method: 'POST', body: params }
+      const res = {}
+      const provider = { host: {} }
       request = new TokenRequest(req, res, provider)
 
       sinon.stub(IDToken, 'issueForRequest')
@@ -1389,10 +1267,4 @@ describe('TokenRequest', () => {
         })
     })
   })
-
-  /**
-   * Include Session State
-   * TODO: should this be on the base class?
-   */
-  describe('includeSessionState', () => {})
 })

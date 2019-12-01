@@ -75,7 +75,7 @@ class RPInitiatedLogoutRequest extends BaseRequest {
    */
   async validateIdTokenHint (request) {
     const { provider, params } = request
-    const idTokenHint = params['id_token_hint']
+    const idTokenHint = params.id_token_hint
     let decodedHint
 
     if (!idTokenHint) {
@@ -85,12 +85,12 @@ class RPInitiatedLogoutRequest extends BaseRequest {
     try {
       decodedHint = await IDToken.decode(idTokenHint)
     } catch (error) {
-      request.badRequest({error_description: 'Error decoding ID Token hint'})
+      request.badRequest({ error_description: 'Error decoding ID Token hint' })
     }
 
     // Importing the provider keys creates a CryptoKey property on each.
     // A CryptoKey object is required for verifying the ID token.
-    const jwks = await JWKSet.importKeys(provider.keys.jwks);
+    const jwks = await JWKSet.importKeys(provider.keys.jwks)
     // Resolve which signing key should be used to verify the ID token.
     if (!decodedHint.resolveKeys(jwks)) {
       request.badRequest({
@@ -102,7 +102,7 @@ class RPInitiatedLogoutRequest extends BaseRequest {
       await decodedHint.verify()
     } catch (cause) {
       console.error('Could not verify ID Token hint:', decodedHint)
-      request.badRequest({error_description: 'Could not verify ID Token hint'})
+      request.badRequest({ error_description: 'Could not verify ID Token hint' })
     }
 
     request.params.decodedHint = decodedHint
@@ -150,7 +150,7 @@ class RPInitiatedLogoutRequest extends BaseRequest {
     }
 
     // Check that the post logout uri has been registered
-    if (!client['post_logout_redirect_uris'] || !client['post_logout_redirect_uris'].includes(uri)) {
+    if (!client.post_logout_redirect_uris || !client.post_logout_redirect_uris.includes(uri)) {
       return request.badRequest({
         error_description: 'post_logout_redirect_uri must be pre-registered'
       })
@@ -206,12 +206,9 @@ class RPInitiatedLogoutRequest extends BaseRequest {
     const { state } = params
 
     let uri = null
-    if (params && params['post_logout_redirect_uri'])
-      uri = params['post_logout_redirect_uri']
-    if (!uri && host.defaults && host.defaults['post_logout_redirect_uri'])
-      uri = host.defaults['post_logout_redirect_uri']
-    if (!uri)
-      uri = DEFAULT_POST_LOGOUT_URI
+    if (params && params.post_logout_redirect_uri) { uri = params.post_logout_redirect_uri }
+    if (!uri && host.defaults && host.defaults.post_logout_redirect_uri) { uri = host.defaults.post_logout_redirect_uri }
+    if (!uri) { uri = DEFAULT_POST_LOGOUT_URI }
 
     if (state) {
       const queryString = qs.stringify({ state })
@@ -222,7 +219,7 @@ class RPInitiatedLogoutRequest extends BaseRequest {
   }
 
   clearUserSession () {
-    let session = this.req.session
+    const session = this.req.session
     session.cookie.expires = new Date(Date.now())
     session.userId = null
     session.subject = null

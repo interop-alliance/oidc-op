@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict'
 
 const DEFAULT_RESPONSE_TYPES = ['code']
@@ -45,23 +46,24 @@ class Client {
    * @param frontchannel_logout_uri
    * @param frontchannel_logout_session_required
    */
-  constructor ({ redirect_uris, client_id, client_secret,
-                 response_types = DEFAULT_RESPONSE_TYPES,
-                 grant_types = DEFAULT_GRANT_TYPES,
-                 application_type = 'web', contacts, client_name, logo_uri,
-                 client_uri, policy_uri, tos_uri, jwks_uri, jwks, subject_type,
-                 sector_identifier_uri, id_token_signed_response_alg = 'RS256',
-                 id_token_encrypted_response_alg,
-                 id_token_encrypted_response_enc, userinfo_signed_response_alg,
-                 userinfo_encrypted_response_alg, userinfo_encrypted_response_enc,
-                 request_object_signing_alg, request_object_encryption_alg,
-                 request_object_encryption_enc,
-                 token_endpoint_auth_method = 'client_secret_basic',
-                 token_endpoint_auth_signing_alg, default_max_age,
-                 require_auth_time, default_acr_values, initiate_login_uri,
-                 request_uris, post_logout_redirect_uris, frontchannel_logout_uri,
-                 frontchannel_logout_session_required
-               }) {
+  constructor ({
+    redirect_uris, client_id, client_secret,
+    response_types = DEFAULT_RESPONSE_TYPES,
+    grant_types = DEFAULT_GRANT_TYPES,
+    application_type = 'web', contacts, client_name, logo_uri,
+    client_uri, policy_uri, tos_uri, jwks_uri, jwks, subject_type,
+    sector_identifier_uri, id_token_signed_response_alg = 'RS256',
+    id_token_encrypted_response_alg,
+    id_token_encrypted_response_enc, userinfo_signed_response_alg,
+    userinfo_encrypted_response_alg, userinfo_encrypted_response_enc,
+    request_object_signing_alg, request_object_encryption_alg,
+    request_object_encryption_enc,
+    token_endpoint_auth_method = 'client_secret_basic',
+    token_endpoint_auth_signing_alg, default_max_age,
+    require_auth_time, default_acr_values, initiate_login_uri,
+    request_uris, post_logout_redirect_uris, frontchannel_logout_uri,
+    frontchannel_logout_session_required
+  }) {
     this.redirect_uris = redirect_uris
     this.client_id = client_id
     this.client_secret = client_secret

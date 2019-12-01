@@ -1,10 +1,13 @@
+/* eslint-disable camelcase */
+'use strict'
+
 /**
  * Local dependencies
  */
 const { JWT } = require('@solid/jose')
 const { hashClaim, random } = require('./crypto')
 
-const DEFAULT_MAX_AGE = 1209600  // Default ID token expiration, in seconds
+const DEFAULT_MAX_AGE = 1209600 // Default ID token expiration, in seconds
 const DEFAULT_SIG_ALGORITHM = 'RS256'
 
 /**
@@ -39,29 +42,29 @@ class IDToken extends JWT {
    * @returns {IDToken} ID Token (JWT instance)
    */
   static issue (provider, options) {
-    let { issuer, keys } = provider
+    const { issuer, keys } = provider
 
-    let { aud, azp, sub, nonce, at_hash, c_hash, cnf } = options
+    const { aud, azp, sub, nonce, at_hash, c_hash, cnf } = options
 
-    let alg = options.alg || DEFAULT_SIG_ALGORITHM
-    let jti = options.jti || random(8)
-    let iat = options.iat || Math.floor(Date.now() / 1000)
-    let max = options.max || DEFAULT_MAX_AGE
+    const alg = options.alg || DEFAULT_SIG_ALGORITHM
+    const jti = options.jti || random(8)
+    const iat = options.iat || Math.floor(Date.now() / 1000)
+    const max = options.max || DEFAULT_MAX_AGE
 
-    let exp = iat + max  // token expiration
+    const exp = iat + max // token expiration
 
-    let iss = issuer
-    let key = keys['id_token'].signing[alg].privateKey
-    let kid = keys['id_token'].signing[alg].publicJwk.kid
+    const iss = issuer
+    const key = keys.id_token.signing[alg].privateKey
+    const kid = keys.id_token.signing[alg].publicJwk.kid
 
-    let header = { alg, kid }
-    let payload = { iss, aud, azp, sub, exp, iat, jti, nonce }
+    const header = { alg, kid }
+    const payload = { iss, aud, azp, sub, exp, iat, jti, nonce }
 
     if (at_hash) { payload.at_hash = at_hash }
     if (c_hash) { payload.c_hash = c_hash }
     if (cnf) { payload.cnf = cnf }
 
-    let jwt = new IDToken({ header, payload, key })
+    const jwt = new IDToken({ header, payload, key })
 
     return jwt
   }
@@ -69,20 +72,20 @@ class IDToken extends JWT {
   /**
    * issueForRequest
    */
-  static issueForRequest (request, response) {
-    let {params, code, provider, client, subject} = request
+  static async issueForRequest (request, response) {
+    const { params, code, provider, client, subject } = request
 
-    let alg = client['id_token_signed_response_alg'] || DEFAULT_SIG_ALGORITHM
-    let jti = random(8)
-    let iat = Math.floor(Date.now() / 1000)
+    const alg = client.id_token_signed_response_alg || DEFAULT_SIG_ALGORITHM
+    const jti = random(8)
+    const iat = Math.floor(Date.now() / 1000)
     let aud, azp, sub, max, nonce
 
     // authentication request
     if (!code) {
-      aud = client['client_id']
-      azp = client['client_id']
-      sub = subject['_id']
-      max = parseInt(params['max_age']) || client['default_max_age'] || DEFAULT_MAX_AGE
+      aud = client.client_id
+      azp = client.client_id
+      sub = subject._id
+      max = parseInt(params.max_age) || client.default_max_age || DEFAULT_MAX_AGE
       nonce = params.nonce
 
     // token request
@@ -90,41 +93,31 @@ class IDToken extends JWT {
       aud = code.aud
       azp = code.azp || aud
       sub = code.sub
-      max = parseInt(code['max']) || client['default_max_age'] || DEFAULT_MAX_AGE
+      max = parseInt(code.max) || client.default_max_age || DEFAULT_MAX_AGE
       nonce = code.nonce
     }
 
-    let len = alg.match(/(256|384|512)$/)[0]
+    const len = alg.match(/(256|384|512)$/)[0]
 
     // generate hashes
-    return Promise.all([
-      hashClaim(response['access_token'], len),
-      hashClaim(response['code'], len)
+    const [at_hash, c_hash] = await Promise.all([
+      hashClaim(response.access_token, len),
+      hashClaim(response.code, len)
     ])
+    const options = {
+      alg, aud, max, azp, sub, iat, jti, nonce, at_hash, c_hash
+    }
 
-      // build the id_token
-      .then(hashes => {
-        let [at_hash, c_hash] = hashes
+    if (request.cnfKey) {
+      options.cnf = { jwk: request.cnfKey }
+    }
 
-        let options = { alg, aud, azp, sub, iat, jti, nonce, at_hash, c_hash }
+    // build the id_token
+    const jwt = IDToken.issue(provider, options)
 
-        if (request.cnfKey) {
-          options.cnf = { jwk: request.cnfKey }
-        }
+    response.id_token = await jwt.encode() // sign id token, compact
 
-        return IDToken.issue(provider, options)
-      })
-
-      // sign id token
-      .then(jwt => jwt.encode())
-
-      // add to response
-      .then(compact => {
-        response['id_token'] = compact
-      })
-
-      // resolve the response
-      .then(() => response)
+    return response
   }
 }
 

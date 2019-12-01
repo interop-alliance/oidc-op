@@ -14,7 +14,7 @@ const sinonChai = require('sinon-chai')
  */
 chai.use(sinonChai)
 chai.should()
-let expect = chai.expect
+const expect = chai.expect
 
 /**
  * Code under test
@@ -25,7 +25,6 @@ const BaseRequest = require(path.join(cwd, 'src', 'handlers', 'BaseRequest'))
  * Tests
  */
 describe('BaseRequest', () => {
-
   /**
    * Handle
    */
@@ -51,27 +50,27 @@ describe('BaseRequest', () => {
     })
 
     it('should set "req"', () => {
-      let request = new BaseRequest(req, res, provider)
+      const request = new BaseRequest(req, res, provider)
       request.req.should.equal(req)
     })
 
     it('should set "res"', () => {
-      let request = new BaseRequest(req, res, provider)
+      const request = new BaseRequest(req, res, provider)
       request.res.should.equal(res)
     })
 
     it('should set "provider"', () => {
-      let request = new BaseRequest(req, res, provider)
+      const request = new BaseRequest(req, res, provider)
       request.provider.should.equal(provider)
     })
 
     it('should set "defaultRsUri"', () => {
-      let request = new BaseRequest(req, res, provider)
+      const request = new BaseRequest(req, res, provider)
       request.defaultRsUri.should.equal('https://rs.example.com')
     })
 
     it('should set "host"', () => {
-      let request = new BaseRequest(req, res, provider)
+      const request = new BaseRequest(req, res, provider)
       request.host.should.equal(host)
     })
   })
@@ -81,18 +80,18 @@ describe('BaseRequest', () => {
    */
   describe('getParams', () => {
     it('should return GET request parameters', () => {
-      let req = { method: 'GET', query: {} }
-      let res = {}
-      let provider = { host: {} }
-      let request = new BaseRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const res = {}
+      const provider = { host: {} }
+      const request = new BaseRequest(req, res, provider)
       BaseRequest.getParams(request).should.equal(req.query)
     })
 
     it('should return POST request parameters', () => {
-      let req = { method: 'POST', body: {} }
-      let res = {}
-      let provider = { host: {} }
-      let request = new BaseRequest(req, res, provider)
+      const req = { method: 'POST', body: {} }
+      const res = {}
+      const provider = { host: {} }
+      const request = new BaseRequest(req, res, provider)
       BaseRequest.getParams(request).should.equal(req.body)
     })
   })
@@ -102,11 +101,11 @@ describe('BaseRequest', () => {
    */
   describe('getResponseTypes', () => {
     it('should create an array of response types', () => {
-      let req = {}
-      let res = {}
-      let provider = { host: {} }
+      const req = {}
+      const res = {}
+      const provider = { host: {} }
 
-      let request = new BaseRequest(req, res, provider)
+      const request = new BaseRequest(req, res, provider)
       request.params = { response_type: 'code id_token token' }
 
       BaseRequest.getResponseTypes(request).should.eql([
@@ -169,21 +168,21 @@ describe('BaseRequest', () => {
     }
 
     describe('hash fragment mode', () => {
-      let responseMode = '#'
+      const responseMode = '#'
 
       it('should serialize response params in the hash fragment', () => {
-        let uri = 'https://ex.com/resource'
+        const uri = 'https://ex.com/resource'
 
-        let result = BaseRequest.responseUri(uri, data, responseMode)
+        const result = BaseRequest.responseUri(uri, data, responseMode)
 
         expect(result).to
           .equal('https://ex.com/resource#id_token=t0ken&state=state123')
       })
 
       it('should preserve existing hash fragment', () => {
-        let uri = 'https://ex.com/resource#hashFragment'
+        const uri = 'https://ex.com/resource#hashFragment'
 
-        let result = BaseRequest.responseUri(uri, data, responseMode)
+        const result = BaseRequest.responseUri(uri, data, responseMode)
 
         expect(result).to
           .equal('https://ex.com/resource#hashFragment&id_token=t0ken&state=state123')
@@ -191,21 +190,21 @@ describe('BaseRequest', () => {
     })
 
     describe('query mode', () => {
-      let responseMode = '?'
+      const responseMode = '?'
 
       it('should serialize response params in the search string', () => {
-        let uri = 'https://ex.com/resource'
+        const uri = 'https://ex.com/resource'
 
-        let result = BaseRequest.responseUri(uri, data, responseMode)
+        const result = BaseRequest.responseUri(uri, data, responseMode)
 
         expect(result).to
           .equal('https://ex.com/resource?id_token=t0ken&state=state123')
       })
 
       it('should preserve existing query string', () => {
-        let uri = 'https://ex.com/resource?key=value'
+        const uri = 'https://ex.com/resource?key=value'
 
-        let result = BaseRequest.responseUri(uri, data, responseMode)
+        const result = BaseRequest.responseUri(uri, data, responseMode)
 
         expect(result).to
           .equal('https://ex.com/resource?key=value&id_token=t0ken&state=state123')
@@ -218,15 +217,15 @@ describe('BaseRequest', () => {
    */
   describe('redirect', () => {
     it('should redirect with an authorization response', () => {
-      let req = {
+      const req = {
         method: 'GET',
         query: { redirect_uri: 'https://example.com/callback' }
       }
 
-      let res = { redirect: sinon.spy() }
-      let provider = { host: {} }
-      let response = { foo: 'bar' }
-      let request = new BaseRequest(req, res, provider)
+      const res = { redirect: sinon.spy() }
+      const provider = { host: {} }
+      const response = { foo: 'bar' }
+      const request = new BaseRequest(req, res, provider)
 
       request.params = req.query
       request.responseMode = '#'
@@ -248,12 +247,12 @@ describe('BaseRequest', () => {
     beforeEach(() => {
       set = sinon.spy()
       send = sinon.spy()
-      status = sinon.stub().returns({send})
+      status = sinon.stub().returns({ send })
 
-      let req = { method: 'GET', query: {} }
-      let res = { set, status }
-      let provider = { host: {} }
-      let request = new BaseRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const res = { set, status }
+      const provider = { host: {} }
+      const request = new BaseRequest(req, res, provider)
 
       try {
         request.unauthorized({
@@ -287,12 +286,12 @@ describe('BaseRequest', () => {
 
     beforeEach(() => {
       send = sinon.spy()
-      status = sinon.stub().returns({send})
+      status = sinon.stub().returns({ send })
 
-      let req = { method: 'GET', query: {} }
-      let res = { status }
-      let provider = { host: {} }
-      let request = new BaseRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const res = { status }
+      const provider = { host: {} }
+      const request = new BaseRequest(req, res, provider)
 
       try {
         request.forbidden()
@@ -317,13 +316,13 @@ describe('BaseRequest', () => {
     beforeEach(() => {
       set = sinon.spy()
       json = sinon.spy()
-      status = sinon.stub().returns({json})
+      status = sinon.stub().returns({ json })
       err = { error: 'error_name', error_description: 'description' }
 
-      let req = { method: 'GET', query: {} }
-      let res = { set, status }
-      let provider = { host: {} }
-      let request = new BaseRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const res = { set, status }
+      const provider = { host: {} }
+      const request = new BaseRequest(req, res, provider)
 
       try {
         request.badRequest(err)
@@ -346,7 +345,7 @@ describe('BaseRequest', () => {
 
     it('should set Pragma header', () => {
       set.should.have.been.calledWith(sinon.match({
-        'Pragma': 'no-cache'
+        Pragma: 'no-cache'
       }))
     })
   })
@@ -359,12 +358,12 @@ describe('BaseRequest', () => {
 
     beforeEach(() => {
       send = sinon.spy()
-      status = sinon.stub().returns({send})
+      status = sinon.stub().returns({ send })
 
-      let req = { method: 'GET', query: {} }
-      let res = { status }
-      let provider = { host: {} }
-      let request = new BaseRequest(req, res, provider)
+      const req = { method: 'GET', query: {} }
+      const res = { status }
+      const provider = { host: {} }
+      const request = new BaseRequest(req, res, provider)
 
       request.internalServerError()
     })
@@ -374,7 +373,7 @@ describe('BaseRequest', () => {
     })
 
     it('should respond Internal Server Error', () => {
-      send.should.have.been.calledWith('Internal Server Error')
+      send.should.have.been.called()
     })
   })
 })
