@@ -40,6 +40,18 @@ const DEFAULT_SUBJECT_TYPES_SUPPORTED = ['public']
 class Provider {
   /**
    * constructor
+   *
+   * @param [data={}] {object}
+   *
+   * @param data.store {object} Container for collection persistence
+   * @param data.store.clients {FlexDocstore} RP Client registrations
+   * @param data.store.codes {FlexDocstore} Authorization codes
+   * @param data.store.tokens {FlexDocstore} ID/Access tokens
+   * @param data.store.refresh {FlexDocstore} Refresh tokens
+   *
+   * @param data.issuer {string} Issuer/provider URL
+   * @param data.keys {Array<JWK>}
+   * @param data.serverUri {string} Used for default Resource Server uri
    */
   constructor (data = {}) {
     const { issuer } = data
@@ -47,7 +59,18 @@ class Provider {
       throw new Error('OpenID Provider must have an issuer.')
     }
 
+    // Non-serializable
+    Object.defineProperty(this, 'backend', {
+      enumerable: false, value: data.backend
+    })
+    Object.defineProperty(this, 'host', {
+      enumerable: false, value: data.host
+    })
+
+    // Serializable properties
     this.issuer = data.issuer
+    this.keys = data.keys
+    this.serverUri = data.serverUri
     this.jwks_uri = data.jwks_uri
     this.scopes_supported = data.scopes_supported
     this.response_types_supported = data.response_types_supported ||
@@ -214,20 +237,6 @@ class Provider {
    */
   get jwkSet () {
     return this.keys.jwkSet
-  }
-
-  /**
-   * inject
-   */
-  inject (properties) {
-    Object.keys(properties).forEach(key => {
-      const value = properties[key]
-
-      Object.defineProperty(this, key, {
-        enumerable: false,
-        value
-      })
-    })
   }
 
   /**

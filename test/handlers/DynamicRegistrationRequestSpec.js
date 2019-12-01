@@ -37,11 +37,10 @@ describe('DynamicRegistrationRequest', () => {
     const configPath = path.join(__dirname, '..', 'config', 'provider.json')
 
     const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    storedConfig.serverUri = defaultRsUri
+    storedConfig.backend = new MemoryStore()
 
     provider = new Provider(storedConfig)
-
-    provider.inject({ serverUri: defaultRsUri })
-    provider.inject({ backend: new MemoryStore() })
 
     return provider.initializeKeyChain(provider.keys)
   })

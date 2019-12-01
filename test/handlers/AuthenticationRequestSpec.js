@@ -53,11 +53,11 @@ describe('AuthenticationRequest', () => {
 
     const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 
-    provider = new Provider(storedConfig)
+    storedConfig.host = host
+    storedConfig.serverUri = defaultRsUri
+    storedConfig.backend = new MemoryStore()
 
-    provider.inject({ host })
-    provider.inject({ serverUri: defaultRsUri })
-    provider.inject({ backend: new MemoryStore() })
+    provider = new Provider(storedConfig)
 
     return provider.initializeKeyChain(provider.keys)
   })

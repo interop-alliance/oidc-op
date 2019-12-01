@@ -35,10 +35,9 @@ describe('AccessToken', () => {
     const configPath = path.join(__dirname, 'config', 'provider.json')
 
     const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    storedConfig.backend = new MemoryStore()
 
     provider = new Provider(storedConfig)
-
-    provider.inject({ backend: new MemoryStore() })
 
     return provider.initializeKeyChain(provider.keys)
   })
