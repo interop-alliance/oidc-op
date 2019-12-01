@@ -79,7 +79,7 @@ class AccessToken extends JWT {
   /**
    * issue
    */
-  static issueForRequest (request, response) {
+  static async issueForRequest (request, response) {
     const { params, code, provider, client, subject, defaultRsUri } = request
 
     const alg = client.access_token_signed_response_alg || DEFAULT_SIG_ALGORITHM
@@ -110,47 +110,32 @@ class AccessToken extends JWT {
 
     const options = { aud, sub, scope, alg, jti, iat, max }
 
-    let header, payload
+    const jwt = AccessToken.issue(provider, options)
+    const header = jwt.header
+    const payload = jwt.payload
 
-    return Promise.resolve()
-      .then(() => AccessToken.issue(provider, options))
+    // set the response properties
+    response.access_token = await jwt.encode() // compact
+    response.token_type = 'Bearer'
+    response.expires_in = max
 
-      .then(jwt => {
-        header = jwt.header
-        payload = jwt.payload
+    // store access token by "jti" claim
+    await provider.backend.put('tokens', `${jti}`, { header, payload })
 
-        return jwt.encode()
-      })
+    // store access token by "refresh_token", if applicable
+    const responseTypes = request.responseTypes || []
+    let refresh
 
-      // set the response properties
-      .then(compact => {
-        response.access_token = compact
-        response.token_type = 'Bearer'
-        response.expires_in = max
-      })
+    if (code || responseTypes.includes('code')) {
+      refresh = random(16)
+    }
 
-      // store access token by "jti" claim
-      .then(() => {
-        return provider.backend.put('tokens', `${jti}`, { header, payload })
-      })
+    if (refresh) {
+      response.refresh_token = refresh
+      await provider.backend.put('refresh', `${refresh}`, { header, payload })
+    }
 
-      // store access token by "refresh_token", if applicable
-      .then(() => {
-        const responseTypes = request.responseTypes || []
-        let refresh
-
-        if (code || responseTypes.includes('code')) {
-          refresh = random(16)
-        }
-
-        if (refresh) {
-          response.refresh_token = refresh
-          return provider.backend.put('refresh', `${refresh}`, { header, payload })
-        }
-      })
-
-      // resolve the response
-      .then(() => response)
+    return response
   }
 }
 

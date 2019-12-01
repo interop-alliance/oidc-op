@@ -100,36 +100,24 @@ class IDToken extends JWT {
     const len = alg.match(/(256|384|512)$/)[0]
 
     // generate hashes
-    return Promise.all([
+    const [at_hash, c_hash] = await Promise.all([
       hashClaim(response.access_token, len),
       hashClaim(response.code, len)
     ])
+    const options = {
+      alg, aud, max, azp, sub, iat, jti, nonce, at_hash, c_hash
+    }
 
-      // build the id_token
-      .then(hashes => {
-        const [at_hash, c_hash] = hashes
+    if (request.cnfKey) {
+      options.cnf = { jwk: request.cnfKey }
+    }
 
-        const options = {
-          alg, aud, max, azp, sub, iat, jti, nonce, at_hash, c_hash
-        }
+    // build the id_token
+    const jwt = IDToken.issue(provider, options)
 
-        if (request.cnfKey) {
-          options.cnf = { jwk: request.cnfKey }
-        }
+    response.id_token = await jwt.encode() // sign id token, compact
 
-        return IDToken.issue(provider, options)
-      })
-
-      // sign id token
-      .then(jwt => jwt.encode())
-
-      // add to response
-      .then(compact => {
-        response.id_token = compact
-      })
-
-      // resolve the response
-      .then(() => response)
+    return response
   }
 }
 
