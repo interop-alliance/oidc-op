@@ -1,3 +1,9 @@
+## v0.6.1 - 2019-11-30
+
+### Changed
+- Refactored code to use ES7 `async`/`await` syntax, and to pass Standard.js 
+  v14.0
+
 ## v0.6.0 - 2019-11-08
 
 ### Changed
