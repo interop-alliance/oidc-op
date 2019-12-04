@@ -44,10 +44,10 @@ class Provider {
    * @param [data={}] {object}
    *
    * @param data.store {object} Container for collection persistence
-   * @param data.store.clients {FlexDocstore} RP Client registrations
-   * @param data.store.codes {FlexDocstore} Authorization codes
-   * @param data.store.tokens {FlexDocstore} ID/Access tokens
-   * @param data.store.refresh {FlexDocstore} Refresh tokens
+   * @param data.store.clients {FlexDocStore} RP Client registrations
+   * @param data.store.codes {FlexDocStore} Authorization codes
+   * @param data.store.tokens {FlexDocStore} ID/Access tokens
+   * @param data.store.refresh {FlexDocStore} Refresh tokens
    *
    * @param data.issuer {string} Issuer/provider URL
    * @param data.keys {Array<JWK>}
@@ -60,8 +60,10 @@ class Provider {
     }
 
     // Non-serializable
-    Object.defineProperty(this, 'backend', {
-      enumerable: false, value: data.backend
+    // this.store = data.store
+    Object.defineProperty(this, 'store', {
+      enumerable: false,
+      value: data.store
     })
     Object.defineProperty(this, 'host', {
       enumerable: false, value: data.host

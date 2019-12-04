@@ -205,7 +205,7 @@ class TokenRequest extends BaseRequest {
       })
     }
 
-    const client = await provider.backend.get('clients', id)
+    const client = await provider.store.clients.get(id)
     // UNKNOWN CLIENT
     if (!client) {
       return this.unauthorized({
@@ -244,7 +244,7 @@ class TokenRequest extends BaseRequest {
       })
     }
 
-    const client = await provider.backend.get('clients', id)
+    const client = await provider.store.clients.get(id)
     // UNKNOWN CLIENT
     if (!client) {
       return this.unauthorized({
@@ -282,7 +282,7 @@ class TokenRequest extends BaseRequest {
       })
     }
 
-    const client = await provider.backend.get('clients', payload.sub)
+    const client = await provider.store.clients.get(payload.sub)
     if (!client) {
       return this.badRequest({
         error: 'unauthorized_client',
@@ -458,7 +458,7 @@ class TokenRequest extends BaseRequest {
       return
     }
 
-    const authorizationCode = await provider.backend.get('codes', params.code)
+    const authorizationCode = await provider.store.codes.get(params.code)
 
     // UNKNOWN AUTHORIZATION CODE
     if (!authorizationCode) {

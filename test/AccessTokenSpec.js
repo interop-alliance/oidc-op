@@ -8,6 +8,7 @@ const fs = require('fs')
 const path = require('path')
 const { JWT } = require('@solid/jose')
 const { random } = require('../src/crypto')
+const testStore = require('./test-storage')
 
 /**
  * Assertions
@@ -22,7 +23,6 @@ const expect = chai.expect
  */
 const Provider = require('../src/Provider')
 const AccessToken = require('../src/AccessToken')
-const MemoryStore = require('./backends/MemoryStore')
 
 /**
  * Tests
@@ -35,7 +35,7 @@ describe('AccessToken', () => {
     const configPath = path.join(__dirname, 'config', 'provider.json')
 
     const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-    storedConfig.backend = new MemoryStore()
+    storedConfig.store = testStore()
 
     provider = new Provider(storedConfig)
 

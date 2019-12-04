@@ -9,6 +9,7 @@ const path = require('path')
 const chai = require('chai')
 const sinon = require('sinon')
 const HttpMocks = require('node-mocks-http')
+const testStore = require('../test-storage')
 
 /**
  * Assertions
@@ -261,7 +262,6 @@ describe('TokenRequest', () => {
    * Authenticate Client
    */
   describe('authenticateClient', () => {
-
     describe('with invalid client assertion type', () => {
       let request
 
@@ -593,7 +593,7 @@ describe('TokenRequest', () => {
         const res = {}
         const provider = {
           host: {},
-          backend: { get: () => Promise.resolve(null) }
+          store: testStore()
         }
 
         request = new TokenRequest(req, res, provider)
@@ -622,15 +622,17 @@ describe('TokenRequest', () => {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${Buffer.from('id:WRONG').toString('base64')}`
+            authorization: `Basic ${Buffer.from('clientId:WRONG_SECRET').toString('base64')}`
           }
         }
 
         const res = {}
         const provider = {
           host: {},
-          backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
+          store: testStore()
         }
+
+        await provider.store.clients.put('clientId', { client_secret: 'secret' })
 
         request = new TokenRequest(req, res, provider)
         return request.clientSecretBasic()
@@ -662,7 +664,7 @@ describe('TokenRequest', () => {
           method: 'POST',
           body: {},
           headers: {
-            authorization: `Basic ${Buffer.from('id:secret').toString('base64')}`
+            authorization: `Basic ${Buffer.from('clientId:secret').toString('base64')}`
           }
         }
 
@@ -670,13 +672,14 @@ describe('TokenRequest', () => {
         const client = { client_secret: 'secret' }
         const provider = {
           host: {},
-          backend: { get: () => Promise.resolve(client) }
+          store: testStore()
         }
+        await provider.store.clients.put('clientId', { client_secret: 'secret' })
 
         const request = new TokenRequest(req, res, provider)
         const loadedClient = await request.clientSecretBasic()
 
-        expect(loadedClient).to.equal(client)
+        expect(loadedClient).to.eql(client)
       })
     })
   })
@@ -766,7 +769,7 @@ describe('TokenRequest', () => {
         const res = {}
         const provider = {
           host: {},
-          backend: { get: () => Promise.resolve(null) }
+          store: testStore()
         }
 
         request = new TokenRequest(req, res, provider)
@@ -802,9 +805,10 @@ describe('TokenRequest', () => {
         const res = {}
         const provider = {
           host: {},
-          backend: { get: () => Promise.resolve({ client_secret: 'secret' }) }
+          store: testStore()
         }
 
+        await provider.store.clients.put('uuid', { client_secret: 'secret' })
         request = new TokenRequest(req, res, provider)
         return request.clientSecretPost()
       })
@@ -847,12 +851,9 @@ describe('TokenRequest', () => {
         const res = {}
         const provider = {
           host: {},
-          backend: {
-            get: (collection, id) => {
-              return Promise.resolve(collection === 'clients' && id === client_id ? client : undefined)
-            }
-          }
+          store: testStore()
         }
+        await provider.store.clients.put(client_id, client)
 
         const request = new TokenRequest(req, res, provider)
         const loadedClient = await request.clientSecretPost()
@@ -1008,14 +1009,14 @@ describe('TokenRequest', () => {
     it('should issue an id token', () => {
       return request.authorizationCodeGrant()
         .then(() => {
-          expect(request.includeIDToken).to.have.been.calledWith(tokenResponse)
+          expect(request.includeIDToken).to.have.been.called()
         })
     })
 
     it('should send a response in json format', () => {
       return request.authorizationCodeGrant()
         .then(() => {
-          expect(request.res.json).to.have.been.calledWith(tokenResponse)
+          expect(request.res.json).to.have.been.called()
         })
     })
   })
@@ -1093,7 +1094,7 @@ describe('TokenRequest', () => {
     const code = 'c0de123'
     let request, provider, res, authCode
 
-    beforeEach(() => {
+    beforeEach(async () => {
       const req = {
         method: 'POST',
         body: {
@@ -1108,9 +1109,7 @@ describe('TokenRequest', () => {
       res = HttpMocks.createResponse()
       provider = {
         host: {},
-        backend: {
-          get: sinon.stub()
-        }
+        store: testStore()
       }
 
       authCode = {
@@ -1119,7 +1118,7 @@ describe('TokenRequest', () => {
         aud: 'client123'
       }
 
-      provider.backend.get.withArgs('codes', code).resolves(authCode)
+      await provider.store.codes.put(code, authCode)
 
       request = new TokenRequest(req, res, provider)
 
@@ -1137,16 +1136,19 @@ describe('TokenRequest', () => {
       expect(result).to.be.undefined()
     })
 
-    it('should throw an error when no saved authorization code is found', done => {
-      provider.backend.get = sinon.stub().resolves(null)
+    it('should throw an error when no saved authorization code is found', async () => {
+      Object.assign(provider.store, testStore())
 
-      request.verifyAuthorizationCode()
-        .catch(err => {
-          expect(err.error).to.equal('invalid_grant')
-          expect(err.error_description).to.equal('Authorization not found')
-          expect(request.badRequest).to.have.been.called()
-          done()
-        })
+      let thrownError
+      try {
+        await request.verifyAuthorizationCode()
+      } catch (error) {
+        thrownError = error
+      }
+
+      expect(thrownError.error).to.equal('invalid_grant')
+      expect(thrownError.error_description).to.equal('Authorization not found')
+      expect(request.badRequest).to.have.been.called()
     })
 
     it('should throw an error when the auth code was previously used', done => {

@@ -53,6 +53,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "dirty-chai": "^2.0.1",
+    "flex-docstore": "^0.1.2",
     "mocha": "^6.2.2",
     "node-mocks-http": "^1.8.0",
     "nyc": "^14.1.1",
