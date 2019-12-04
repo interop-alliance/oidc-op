@@ -23,7 +23,7 @@ const expect = chai.expect
 const Provider = require('../../src/Provider')
 const Client = require('../../src/Client')
 const DynamicRegistrationRequest = require('../../src/handlers/DynamicRegistrationRequest')
-const MemoryStore = require('../backends/MemoryStore')
+const testStore = require('../test-storage')
 
 /**
  * Tests
@@ -37,11 +37,10 @@ describe('DynamicRegistrationRequest', () => {
     const configPath = path.join(__dirname, '..', 'config', 'provider.json')
 
     const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    storedConfig.serverUri = defaultRsUri
+    storedConfig.store = testStore()
 
     provider = new Provider(storedConfig)
-
-    provider.inject({ serverUri: defaultRsUri })
-    provider.inject({ backend: new MemoryStore() })
 
     return provider.initializeKeyChain(provider.keys)
   })
@@ -55,7 +54,7 @@ describe('DynamicRegistrationRequest', () => {
     })
     res = HttpMocks.createResponse()
 
-    provider.backend.data = {}
+    Object.assign(provider.store, testStore())
 
     request = new DynamicRegistrationRequest(req, res, provider)
     sinon.spy(request, 'badRequest')
@@ -134,7 +133,7 @@ describe('DynamicRegistrationRequest', () => {
       request.client = client
 
       await request.register()
-      const storedClient = await provider.backend.get('clients', 'client123')
+      const storedClient = await provider.store.clients.get('client123')
       expect(storedClient).to.eql(client)
     })
   })

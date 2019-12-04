@@ -142,7 +142,7 @@ class RPInitiatedLogoutRequest extends BaseRequest {
     // post logout redirect URI has been pre-registered
     const clientId = decodedHint.payload.azp || decodedHint.payload.aud
 
-    const client = await provider.backend.get('clients', clientId)
+    const client = await provider.store.clients.get(clientId)
     if (!client) {
       return request.badRequest({
         error_description: 'Invalid ID Token hint (client not found)'

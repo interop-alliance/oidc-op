@@ -77,7 +77,7 @@ class AuthenticationRequest extends BaseRequest {
     }
 
     // client registration
-    const client = await provider.backend.get('clients', params.client_id)
+    const client = await provider.store.clients.get(params.client_id)
 
     if (client && client.jwks) {
       // pre-registered client keys (for signing request objects, etc)
@@ -324,6 +324,7 @@ class AuthenticationRequest extends BaseRequest {
 
     // CLIENT ID IS REQUIRED
     if (!params.client_id) {
+      console.log('----AUTH REQUEST / Unknown client')
       return this.forbidden({
         error: 'unauthorized_client',
         error_description: 'Missing client id'
@@ -532,10 +533,9 @@ class AuthenticationRequest extends BaseRequest {
    *
    * @returns {Promise}
    */
-  includeAuthorizationCode (response) {
+  async includeAuthorizationCode (response) {
     const { responseTypes, params, scope } = this
     const { provider, client, subject } = this
-    const { backend } = provider
 
     if (responseTypes.includes('code')) {
       const code = random(16)
@@ -551,14 +551,11 @@ class AuthenticationRequest extends BaseRequest {
         code, sub, aud, exp, max, scope, nonce, redirect_uri
       })
 
-      return backend.put('codes', code, ac)
-        .then(() => {
-          response.code = code
-          return response
-        })
+      await provider.store.codes.put(code, ac)
+      response.code = code
     }
 
-    return Promise.resolve(response)
+    return response
   }
 
   /**

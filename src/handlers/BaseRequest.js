@@ -308,7 +308,8 @@ class BaseRequest {
   internalServerError (err) {
     // TODO: Debug logging here
     const { res } = this
-    res.status(500).send('Internal Server Error:', err)
+    console.error(err)
+    res.status(500).send('Internal Server Error')
   }
 }
 

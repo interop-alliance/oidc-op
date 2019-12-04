@@ -120,7 +120,7 @@ class AccessToken extends JWT {
     response.expires_in = max
 
     // store access token by "jti" claim
-    await provider.backend.put('tokens', `${jti}`, { header, payload })
+    await provider.store.tokens.put(jti, { header, payload })
 
     // store access token by "refresh_token", if applicable
     const responseTypes = request.responseTypes || []
@@ -132,7 +132,7 @@ class AccessToken extends JWT {
 
     if (refresh) {
       response.refresh_token = refresh
-      await provider.backend.put('refresh', `${refresh}`, { header, payload })
+      await provider.store.refresh.put(refresh, { header, payload })
     }
 
     return response

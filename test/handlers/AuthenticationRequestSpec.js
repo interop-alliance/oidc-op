@@ -11,8 +11,8 @@ chai.use(require('dirty-chai'))
 
 const sinon = require('sinon')
 const HttpMocks = require('node-mocks-http')
-const MemoryStore = require(path.join(cwd, 'test', 'backends', 'MemoryStore'))
 const { JWT } = require('@solid/jose')
+const testStore = require('../test-storage')
 
 /**
  * Assertions
@@ -46,18 +46,19 @@ describe('AuthenticationRequest', () => {
       return request
     }
   }
+  const configPath = path.join(__dirname, '..', 'config', 'provider.json')
+
+  const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+
+  storedConfig.host = host
+  storedConfig.serverUri = defaultRsUri
+
   let provider, params, req, res, request
 
   before(function () {
-    const configPath = path.join(__dirname, '..', 'config', 'provider.json')
-
-    const storedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+    storedConfig.store = testStore()
 
     provider = new Provider(storedConfig)
-
-    provider.inject({ host })
-    provider.inject({ serverUri: defaultRsUri })
-    provider.inject({ backend: new MemoryStore() })
 
     return provider.initializeKeyChain(provider.keys)
   })
@@ -66,7 +67,7 @@ describe('AuthenticationRequest', () => {
     res = HttpMocks.createResponse()
     params = {}
     req = HttpMocks.createRequest({ method: 'GET', query: params })
-    provider.backend.data = {}
+    Object.assign(provider.store, testStore())
   })
 
   /**
@@ -85,12 +86,9 @@ describe('AuthenticationRequest', () => {
       nonce: 'n0nc3'
     }
 
-    beforeEach(() => {
-      provider.backend.data.clients = {}
-      provider.backend.put('clients', 'uuid', client)
-    })
-
     it('should create and execute an AuthenticationRequest', async () => {
+      provider.store.clients.put('uuid', client)
+
       req = HttpMocks.createRequest({ method: 'GET', query: params })
 
       await AuthenticationRequest.handle(req, res, provider)
@@ -166,7 +164,7 @@ describe('AuthenticationRequest', () => {
       params = { client_id: clientId, response_type: 'id_token token' }
       req = HttpMocks.createRequest({ method: 'GET', query: params })
       request = new AuthenticationRequest(req, res, provider)
-      provider.backend.get = sinon.stub().withArgs('clients', clientId)
+      provider.store.clients.get = sinon.stub().withArgs(clientId)
         .resolves(client)
     })
 
@@ -183,7 +181,7 @@ describe('AuthenticationRequest', () => {
     })
 
     it('should return undefined if no client found for client_id', async () => {
-      request.provider.backend.get = sinon.stub().resolves(undefined)
+      request.provider.store.clients.get = sinon.stub().resolves(undefined)
 
       const loadedClient = await request.loadClient(request)
       expect(loadedClient).to.be.undefined()
@@ -999,9 +997,7 @@ describe('AuthenticationRequest', () => {
     beforeEach(() => {
       authResponse = {}
       provider = {
-        backend: {
-          put: sinon.stub().resolves()
-        }
+        store: testStore()
       }
       request = new AuthenticationRequest(req, res, provider)
       request.client = { client_id: 'client123' }
@@ -1014,11 +1010,12 @@ describe('AuthenticationRequest', () => {
       expect(result).to.have.property('code')
     })
 
-    it('stores the corresponding AuthorizationCode instance', () => {
-      return request.includeAuthorizationCode(authResponse)
-        .then(result => {
-          expect(provider.backend.put).to.have.been.calledWith('codes')
-        })
+    it('stores the corresponding AuthorizationCode instance', async () => {
+      const result = await request.includeAuthorizationCode(authResponse)
+
+      const storedCode = await provider.store.codes.get(result.code)
+      expect(storedCode).to.exist()
+      expect(storedCode).to.have.property('aud', 'client123')
     })
   })
 

@@ -97,11 +97,10 @@ class DynamicRegistrationRequest extends BaseRequest {
    * @returns {Promise}
    */
   async register () {
-    const { client } = this
-    const backend = this.provider.backend
+    const { client, provider } = this
     const id = client.client_id
 
-    return backend.put('clients', id, client)
+    return provider.store.clients.put(id, client)
   }
 
   /**
